@@ -1,0 +1,29 @@
+# <%= module_name %>
+
+A [GemStack](https://github.com/gemstack/gemstack) application: a Ruby API with a
+Next.js + TypeScript frontend, served from one origin.
+
+```bash
+gemstack dev          # http://localhost:3000  (/api/* → Ruby, everything else → Next.js)
+gemstack routes       # list API routes
+gemstack test         # run the Ruby tests
+gemstack console      # IRB with the app loaded
+gemstack generate controller Status show
+```
+
+## Layout
+
+| Path | What lives there |
+|---|---|
+| `config/app.rb` | configuration (`GemStack.configure`) |
+| `config/routes.rb` | API routes, relative to `/api` |
+| `app/` | autoloaded code: `controllers/`, and any folder you add (`services/`, ...) |
+| `test/` | Minitest + rack-test (`GemStack::TestCase`) |
+| `frontend/` | the Next.js app; `lib/gemstack/client.ts` talks to the API |
+
+## Production
+
+Run the API with `gemstack server` (Puma, `config/puma.rb`) and the frontend
+with `npm run build && npm start` in `frontend/`. Either route `/api/*` to the
+API with your reverse proxy, or set `GEMSTACK_API_URL` for the Next.js process
+and it will proxy `/api/*` itself.

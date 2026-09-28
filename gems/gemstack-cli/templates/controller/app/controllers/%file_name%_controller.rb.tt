@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+class <%= class_name %> < ApplicationController
+<% actions.each_with_index do |action, index| -%>
+<%= "\n" if index.positive? %>  # <%= route_for(action)[0].upcase %> /api<%= route_for(action)[1] %>
+  def <%= action %>
+    render({ action: "<%= file_name %>#<%= action %>" })
+  end
+<% end -%>
+end

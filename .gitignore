@@ -1,0 +1,10 @@
+/tmp/
+/.bundle/
+/vendor/
+*.gem
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+/pkg/

@@ -1,0 +1,45 @@
+"use client";
+
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { <%= class_name %>Form } from "@/components/<%= spec.url_segment %>/<%= class_name %>Form";
+import { <%= spec.action?(:show) ? "use#{class_name}, " : "" %>useUpdate<%= class_name %> } from "@/lib/queries/<%= spec.url_segment %>";
+
+export default function Edit<%= class_name %>Page() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+<% if spec.action?(:show) -%>
+  const <%= spec.variable %> = use<%= class_name %>(id);
+<% end -%>
+  const update = useUpdate<%= class_name %>(id);
+
+  return (
+    <main className="page">
+      <p>
+        <Link href="/<%= spec.url_segment %><%= spec.action?(:show) ? "/${id}" : "" %>">← Back</Link>
+      </p>
+      <h1>Edit <%= spec.human.downcase %></h1>
+<% if spec.action?(:show) -%>
+      {<%= spec.variable %>.isPending && <p className="muted">Loading…</p>}
+      {<%= spec.variable %>.data && (
+        <<%= class_name %>Form
+          <%= spec.variable %>={<%= spec.variable %>.data}
+          submitLabel="Save changes"
+          onSubmit={async (input) => {
+            await update.mutateAsync(input);
+            router.push(`/<%= spec.url_segment %>/${id}`);
+          }}
+        />
+      )}
+<% else -%>
+      <<%= class_name %>Form
+        submitLabel="Save changes"
+        onSubmit={async (input) => {
+          await update.mutateAsync(input);
+          router.push("/<%= spec.url_segment %>");
+        }}
+      />
+<% end -%>
+    </main>
+  );
+}

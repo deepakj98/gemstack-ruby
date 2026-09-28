@@ -1,0 +1,49 @@
+"use client";
+
+import Link from "next/link";
+import { useParams<%= spec.action?(:destroy) ? ", useRouter" : "" %> } from "next/navigation";
+import { <%= class_name %>Card } from "@/components/<%= spec.url_segment %>/<%= class_name %>Card";
+import { <%= ["use#{class_name}", (spec.action?(:destroy) ? "useDelete#{class_name}" : nil)].compact.join(", ") %> } from "@/lib/queries/<%= spec.url_segment %>";
+
+export default function <%= class_name %>Page() {
+  const { id } = useParams<{ id: string }>();
+  const <%= spec.variable %> = use<%= class_name %>(id);
+<% if spec.action?(:destroy) -%>
+  const router = useRouter();
+  const remove = useDelete<%= class_name %>();
+
+  async function handleDelete() {
+    if (!window.confirm("Delete this <%= spec.human.downcase %>?")) return;
+    await remove.mutateAsync(id);
+    router.push("/<%= spec.url_segment %>");
+  }
+<% end -%>
+
+  return (
+    <main className="page">
+      <p>
+        <Link href="/<%= spec.url_segment %>">← <%= spec.human_plural %></Link>
+      </p>
+      {<%= spec.variable %>.isPending && <p className="muted">Loading…</p>}
+      {<%= spec.variable %>.isError && <p className="form-error">{<%= spec.variable %>.error.message}</p>}
+      {<%= spec.variable %>.data && (
+        <>
+          <h1><%= spec.human %> #{<%= spec.variable %>.data.id}</h1>
+          <<%= class_name %>Card <%= spec.variable %>={<%= spec.variable %>.data} />
+          <div className="actions">
+<% if spec.action?(:update) -%>
+            <Link className="button" href={`/<%= spec.url_segment %>/${id}/edit`}>
+              Edit
+            </Link>
+<% end -%>
+<% if spec.action?(:destroy) -%>
+            <button className="button button-danger" type="button" onClick={handleDelete} disabled={remove.isPending}>
+              Delete
+            </button>
+<% end -%>
+          </div>
+        </>
+      )}
+    </main>
+  );
+}

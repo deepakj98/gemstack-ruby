@@ -1,0 +1,73 @@
+# frozen_string_literal: true
+
+require_relative "../test_helper"
+
+class <%= spec.plural_class %>ControllerTest < GemStack::TestCase
+  # Valid values derived from <%= class_name %>'s field declarations — edit freely.
+  def create_<%= spec.file_name %> = <%= class_name %>.create(GemStack::DB::Testing.sample_attributes(<%= class_name %>))
+  def payload = GemStack::DB::Testing.sample_payload(<%= class_name %>)
+<% if spec.action?(:index) -%>
+
+  def test_index
+    create_<%= spec.file_name %>
+    get_json "/api/<%= spec.url_segment %>"
+
+    assert_status 200
+    assert_equal 1, json_body.size
+  end
+<% end -%>
+<% if spec.action?(:show) -%>
+
+  def test_show
+    <%= spec.variable %> = create_<%= spec.file_name %>
+    get_json "/api/<%= spec.url_segment %>/#{<%= spec.variable %>.id}"
+
+    assert_status 200
+    assert_equal <%= spec.variable %>.id, json_body["id"]
+  end
+
+  def test_show_missing
+    get_json "/api/<%= spec.url_segment %>/0"
+
+    assert_error 404, "not_found"
+  end
+<% end -%>
+<% if spec.action?(:create) -%>
+
+  def test_create
+    post_json "/api/<%= spec.url_segment %>", payload
+
+    assert_status 201
+    assert <%= class_name %>[json_body["id"]]
+  end
+<% if fields.any?(&:required?) -%>
+
+  def test_create_with_invalid_input
+    post_json "/api/<%= spec.url_segment %>", {}
+
+    assert_error 422, "validation_failed"
+    assert_equal ["is required"], json_body["errors"]["<%= fields.find(&:required?).column %>"]
+  end
+<% end -%>
+<% end -%>
+<% if spec.action?(:update) -%>
+
+  def test_update
+    <%= spec.variable %> = create_<%= spec.file_name %>
+    patch_json "/api/<%= spec.url_segment %>/#{<%= spec.variable %>.id}", payload
+
+    assert_status 200
+    assert_equal <%= spec.variable %>.id, json_body["id"]
+  end
+<% end -%>
+<% if spec.action?(:destroy) -%>
+
+  def test_destroy
+    <%= spec.variable %> = create_<%= spec.file_name %>
+    delete_json "/api/<%= spec.url_segment %>/#{<%= spec.variable %>.id}"
+
+    assert_status 204
+    assert_nil <%= class_name %>[<%= spec.variable %>.id]
+  end
+<% end -%>
+end

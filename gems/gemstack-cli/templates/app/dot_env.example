@@ -1,0 +1,9 @@
+# Copy to .env for local development overrides. Never commit real secrets.
+# Variables already set in your shell always take precedence.
+
+# PORT=3000                   # public development port (gemstack dev)
+# GEMSTACK_LOG_LEVEL=debug
+
+# PostgreSQL. Defaults: postgres:///<app>_development locally (current OS user).
+# DATABASE_URL=postgres://user:password@localhost:5432/myapp_development
+# TEST_DATABASE_URL=postgres://user:password@localhost:5432/myapp_test

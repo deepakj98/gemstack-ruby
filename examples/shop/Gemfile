@@ -1,0 +1,26 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# GemStack from this repository.
+path "../../gems" do
+  gem "gemstack"
+  gem "gemstack-cli"
+  gem "gemstack-contract"
+  gem "gemstack-core"
+  gem "gemstack-db"
+  gem "gemstack-dev"
+  gem "gemstack-http"
+  gem "gemstack-schema"
+end
+gem "puma", ">= 6.4"
+
+# Any gem works here as usual, e.g.:
+# gem "oj"       # faster JSON: config.http.json = :oj
+# gem "stripe"
+
+group :development, :test do
+  gem "irb" # `gemstack console`; a bundled (not default) gem since Ruby 4.0
+  gem "minitest", "~> 5.25"
+  gem "rack-test", "~> 2.2"
+end

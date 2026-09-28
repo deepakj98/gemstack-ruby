@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+
+Sequel.migration do
+  change do
+    create_table(:<%= spec.table %>) do
+      primary_key :id, type: :Bignum
+<% fields.each do |field| -%>
+      <%= migration_column(field) %>
+<% end -%>
+      column :created_at, :timestamptz, null: false
+      column :updated_at, :timestamptz, null: false
+<% fields.select { |f| f.index && !f.unique }.each do |field| -%>
+
+      index :<%= field.column %>
+<% end -%>
+    end
+  end
+end

@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+require_relative "<%= "../" * (file_name.count("/") + 1) %>test_helper"
+
+class <%= class_name %>Test < GemStack::TestCase
+<% actions.each_with_index do |action, index| -%>
+<%= "\n" if index.positive? %>  def test_<%= action %>
+    <%= route_for(action)[0] %>_json "<%= request_path(action) %>"
+
+    assert_status 200
+    assert_equal({ "action" => "<%= file_name %>#<%= action %>" }, json_body)
+  end
+<% end -%>
+end

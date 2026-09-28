@@ -1,0 +1,25 @@
+"use client";
+
+import Link from "next/link";
+import { <%= class_name %>Table } from "@/components/<%= spec.url_segment %>/<%= class_name %>Table";
+import { use<%= spec.plural_class %> } from "@/lib/queries/<%= spec.url_segment %>";
+
+export default function <%= spec.plural_class %>Page() {
+  const <%= spec.plural %> = use<%= spec.plural_class %>();
+
+  return (
+    <main className="page">
+      <header className="page-header">
+        <h1><%= spec.human_plural %></h1>
+<% if spec.action?(:create) -%>
+        <Link className="button" href="/<%= spec.url_segment %>/new">
+          New <%= spec.human.downcase %>
+        </Link>
+<% end -%>
+      </header>
+      {<%= spec.plural %>.isPending && <p className="muted">Loading…</p>}
+      {<%= spec.plural %>.isError && <p className="form-error">Could not load <%= spec.human_plural.downcase %>: {<%= spec.plural %>.error.message}</p>}
+      {<%= spec.plural %>.data && <<%= class_name %>Table <%= spec.plural %>={<%= spec.plural %>.data} />}
+    </main>
+  );
+}

@@ -1,0 +1,45 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { api, API_PATH } from "@/lib/gemstack/client";
+
+// Starter page: confirms the browser reaches the Ruby API through the same origin.
+// Replace it with your application.
+export default function Home() {
+  const health = useQuery({
+    queryKey: ["health"],
+    queryFn: () => api.get<{ status: string }>("/health"),
+  });
+
+  const state = health.isPending ? "pending" : health.isError ? "error" : "ok";
+  const label = {
+    pending: "Connecting to the Ruby API…",
+    error: `Ruby API unreachable: ${health.error?.message}`,
+    ok: `Ruby API connected — GET ${API_PATH}/health → ${health.data?.status}`,
+  }[state];
+
+  return (
+    <main className="page">
+      <h1><%= module_name %></h1>
+      <p className="muted">Next.js + TypeScript frontend, GemStack Ruby API, one origin.</p>
+
+      <p className={`status status-${state}`} role="status">
+        <span className="dot" aria-hidden="true" />
+        {label}
+      </p>
+
+      <h2>Next steps</h2>
+      <ul>
+        <li>
+          Add an endpoint: <code>gemstack generate controller Status show</code>
+        </li>
+        <li>
+          Call it from here: <code>api.get(&quot;/status/1&quot;)</code> (see <code>lib/gemstack/client.ts</code>)
+        </li>
+        <li>
+          Edit this page: <code>frontend/app/page.tsx</code>
+        </li>
+      </ul>
+    </main>
+  );
+}

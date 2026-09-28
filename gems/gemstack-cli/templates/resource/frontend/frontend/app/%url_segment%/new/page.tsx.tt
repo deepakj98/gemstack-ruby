@@ -1,0 +1,27 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { <%= class_name %>Form } from "@/components/<%= spec.url_segment %>/<%= class_name %>Form";
+import { useCreate<%= class_name %> } from "@/lib/queries/<%= spec.url_segment %>";
+
+export default function New<%= class_name %>Page() {
+  const router = useRouter();
+  const create = useCreate<%= class_name %>();
+
+  return (
+    <main className="page">
+      <p>
+        <Link href="/<%= spec.url_segment %>">← <%= spec.human_plural %></Link>
+      </p>
+      <h1>New <%= spec.human.downcase %></h1>
+      <<%= class_name %>Form
+        submitLabel="Create <%= spec.human.downcase %>"
+        onSubmit={async (input) => {
+          const <%= spec.variable %> = await create.mutateAsync(input);
+          router.push(<%= spec.action?(:show) ? "`/#{spec.url_segment}/${#{spec.variable}.id}`" : "\"/#{spec.url_segment}\"" %>);
+        }}
+      />
+    </main>
+  );
+}

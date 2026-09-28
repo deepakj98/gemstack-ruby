@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+# What the API returns for a <%= class_name %>. Only listed attributes are exposed;
+# their types (from <%= class_name %>'s fields) drive the generated TypeScript types.
+class <%= class_name %>Serializer < GemStack::Serializer
+  attributes :id, <%= fields.map { |f| ":#{f.column}" }.join(", ") %>, :created_at, :updated_at
+end

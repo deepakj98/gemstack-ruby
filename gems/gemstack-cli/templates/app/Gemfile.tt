@@ -1,0 +1,35 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+<% if gemstack_path -%>
+# GemStack from a local checkout.
+path "<%= gemstack_path %>" do
+  gem "gemstack"
+  gem "gemstack-cli"
+  gem "gemstack-contract"
+  gem "gemstack-core"
+<% if database? -%>
+  gem "gemstack-db"
+<% end -%>
+  gem "gemstack-dev"
+  gem "gemstack-http"
+  gem "gemstack-schema"
+end
+<% else -%>
+gem "gemstack", "~> <%= version %>"
+<% if database? -%>
+gem "gemstack-db", "~> <%= version %>"
+<% end -%>
+<% end -%>
+gem "puma", ">= 6.4"
+
+# Any gem works here as usual, e.g.:
+# gem "oj"       # faster JSON: config.http.json = :oj
+# gem "stripe"
+
+group :development, :test do
+  gem "irb" # `gemstack console`; a bundled (not default) gem since Ruby 4.0
+  gem "minitest", "~> 5.25"
+  gem "rack-test", "~> 2.2"
+end

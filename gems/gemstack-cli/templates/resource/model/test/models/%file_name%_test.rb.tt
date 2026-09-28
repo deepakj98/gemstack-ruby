@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+require_relative "../test_helper"
+
+class <%= class_name %>Test < GemStack::TestCase
+  def sample = GemStack::DB::Testing.sample_attributes(<%= class_name %>)
+
+  def test_valid_with_sample_attributes
+    <%= spec.variable %> = <%= class_name %>.new(sample)
+
+    assert_predicate <%= spec.variable %>, :valid?, <%= spec.variable %>.errors.to_h.inspect
+  end
+
+  def test_create
+    <%= spec.variable %> = <%= class_name %>.create(sample)
+
+    assert <%= spec.variable %>.id
+    assert <%= spec.variable %>.created_at
+  end
+<% fields.select(&:required?).each do |field| -%>
+
+  def test_requires_<%= field.column %>
+    <%= spec.variable %> = <%= class_name %>.new(sample.except(:<%= field.column %>))
+
+    refute_predicate <%= spec.variable %>, :valid?
+    assert_includes <%= spec.variable %>.errors[:<%= field.column %>], "is required"
+  end
+<% end -%>
+end

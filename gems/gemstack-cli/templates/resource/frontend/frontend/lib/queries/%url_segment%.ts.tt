@@ -1,0 +1,59 @@
+"use client";
+
+// TanStack Query hooks for <%= spec.human_plural.downcase %>, built on the generated API client.
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { <%= spec.client_name %> } from "@/lib/api/generated";
+import type { <%= [class_name, (spec.action?(:create) ? "#{class_name}Input" : nil), (spec.action?(:update) ? "#{class_name}UpdateInput" : nil)].compact.join(", ") %> } from "@/lib/api/generated";
+
+export const <%= spec.variable %>Keys = {
+  all: ["<%= spec.plural %>"] as const,
+  detail: (id: string | number) => ["<%= spec.plural %>", String(id)] as const,
+};
+<% if spec.action?(:index) -%>
+
+export function use<%= spec.plural_class %>() {
+  return useQuery({ queryKey: <%= spec.variable %>Keys.all, queryFn: () => <%= spec.client_name %>.list() });
+}
+<% end -%>
+<% if spec.action?(:show) -%>
+
+export function use<%= class_name %>(id: string | number) {
+  return useQuery({ queryKey: <%= spec.variable %>Keys.detail(id), queryFn: () => <%= spec.client_name %>.get(id) });
+}
+<% end -%>
+<% if spec.action?(:create) -%>
+
+export function useCreate<%= class_name %>() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: <%= class_name %>Input) => <%= spec.client_name %>.create(data),
+    onSuccess: (<%= spec.variable %>: <%= class_name %>) => {
+      queryClient.setQueryData(<%= spec.variable %>Keys.detail(<%= spec.variable %>.id), <%= spec.variable %>);
+      return queryClient.invalidateQueries({ queryKey: <%= spec.variable %>Keys.all });
+    },
+  });
+}
+<% end -%>
+<% if spec.action?(:update) -%>
+
+export function useUpdate<%= class_name %>(id: string | number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: <%= class_name %>UpdateInput) => <%= spec.client_name %>.update(id, data),
+    onSuccess: (<%= spec.variable %>: <%= class_name %>) => {
+      queryClient.setQueryData(<%= spec.variable %>Keys.detail(id), <%= spec.variable %>);
+      return queryClient.invalidateQueries({ queryKey: <%= spec.variable %>Keys.all });
+    },
+  });
+}
+<% end -%>
+<% if spec.action?(:destroy) -%>
+
+export function useDelete<%= class_name %>() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) => <%= spec.client_name %>.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: <%= spec.variable %>Keys.all }),
+  });
+}
+<% end -%>

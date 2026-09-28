@@ -1,0 +1,15 @@
+import { display } from "@/lib/format";
+import type { <%= class_name %> } from "@/lib/api/generated";
+
+export function <%= class_name %>Card({ <%= spec.variable %> }: { <%= spec.variable %>: <%= class_name %> }) {
+  return (
+    <dl className="card">
+<% fields.each do |field| -%>
+      <dt><%= field.label %></dt>
+      <dd>{display(<%= spec.variable %>.<%= field.column %>)}</dd>
+<% end -%>
+      <dt>Created</dt>
+      <dd>{new Date(<%= spec.variable %>.created_at).toLocaleString()}</dd>
+    </dl>
+  );
+}

@@ -1,0 +1,36 @@
+import Link from "next/link";
+import { display } from "@/lib/format";
+import type { <%= class_name %> } from "@/lib/api/generated";
+
+export function <%= class_name %>Table({ <%= spec.plural %> }: { <%= spec.plural %>: <%= class_name %>[] }) {
+  if (<%= spec.plural %>.length === 0) return <p className="muted">No <%= spec.human_plural.downcase %> yet.</p>;
+
+  return (
+    <table className="table">
+      <thead>
+        <tr>
+<% table_fields.each do |field| -%>
+          <th><%= field.label %></th>
+<% end -%>
+<% if spec.action?(:show) -%>
+          <th aria-label="Actions" />
+<% end -%>
+        </tr>
+      </thead>
+      <tbody>
+        {<%= spec.plural %>.map((<%= spec.variable %>) => (
+          <tr key={<%= spec.variable %>.id}>
+<% table_fields.each do |field| -%>
+            <td>{display(<%= spec.variable %>.<%= field.column %>)}</td>
+<% end -%>
+<% if spec.action?(:show) -%>
+            <td>
+              <Link href={`/<%= spec.url_segment %>/${<%= spec.variable %>.id}`}>View</Link>
+            </td>
+<% end -%>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}

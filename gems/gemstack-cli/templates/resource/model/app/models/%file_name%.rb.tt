@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+class <%= class_name %> < GemStack::Model
+<% fields.each do |field| -%>
+  <%= model_field(field) %>
+<% end -%>
+<% fields.select(&:unique).each do |field| -%>
+
+  validates :<%= field.column %>, uniqueness: true
+<% end -%>
+<% spec.references.each do |field| -%>
+
+  belongs_to :<%= field.name %>
+<% end -%>
+end

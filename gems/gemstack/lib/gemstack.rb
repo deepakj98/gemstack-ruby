@@ -1,0 +1,53 @@
+# frozen_string_literal: true
+
+require "gemstack/core"
+require "gemstack/http"
+require "gemstack/dev"
+require_relative "gemstack/interlock"
+require_relative "gemstack/reloader"
+require_relative "gemstack/application"
+
+module GemStack
+  class Config
+    # Reload app/ code and routes between requests when files change.
+    setting :reload_code, default: -> { GemStack.env.development? }
+    # Load all application code at boot (faster first requests, copy-on-write
+    # friendly with Puma workers).
+    setting :eager_load, default: -> { !GemStack.env.local? }
+    # Extra directories to autoload, relative to the root (e.g. ["lib"]).
+    setting :autoload_paths, default: []
+  end
+
+  # Short names for application code:
+  #   class ApplicationController < GemStack::Controller
+  Controller = HTTP::Controller
+  Params = HTTP::Params
+  # GemStack::Schema, GemStack::Serializer and GemStack::Types come from gemstack-schema.
+
+  class << self
+    def application
+      @application ||= Application.new(config: config)
+    end
+
+    attr_writer :application
+
+    def boot! = application.boot!
+
+    # config/routes.rb:
+    #   GemStack.routes do
+    #     resources :products
+    #   end
+    def routes(&)
+      return application.routes unless block_given?
+
+      application.draw_routes(&)
+    end
+
+    alias reset_core! reset!
+
+    def reset!
+      reset_core!
+      @application = nil
+    end
+  end
+end

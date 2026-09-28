@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+# Sequel migration — see https://sequel.jeremyevans.net/rdoc/files/doc/schema_modification_rdoc.html
+Sequel.migration do
+  change do
+<% if table && !columns.empty? -%>
+    alter_table(:<%= table %>) do
+<% columns.each do |column| -%>
+      <%= column %>
+<% end -%>
+    end
+<% else -%>
+    # create_table(:things) { primary_key :id, type: :Bignum }
+    # alter_table(:things) { add_column :name, String }
+<% end -%>
+  end
+end

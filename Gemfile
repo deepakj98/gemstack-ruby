@@ -1,0 +1,24 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# Every GemStack gem is developed in this monorepo.
+path "gems" do
+  gem "gemstack"
+  gem "gemstack-cli"
+  gem "gemstack-contract"
+  gem "gemstack-core"
+  gem "gemstack-db"
+  gem "gemstack-dev"
+  gem "gemstack-http"
+  gem "gemstack-schema"
+end
+
+group :development, :test do
+  gem "benchmark" # a bundled (not default) gem since Ruby 4.0
+  gem "minitest", "~> 5.25"
+  gem "oj", "~> 3.16"
+  gem "rack-test", "~> 2.2"
+  gem "rake", "~> 13.0"
+  gem "rubocop", "~> 1.81", require: false
+end

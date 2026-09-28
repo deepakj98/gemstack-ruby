@@ -1,0 +1,65 @@
+AllCops:
+  TargetRubyVersion: 4.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "**/templates/**/*"
+    - "tmp/**/*"
+    - "vendor/**/*"
+    - "**/node_modules/**/*"
+
+Style/Documentation:
+  Enabled: false
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Metrics/ClassLength:
+  Max: 250
+Metrics/ModuleLength:
+  Max: 250
+Metrics/CyclomaticComplexity:
+  Max: 12
+Metrics/PerceivedComplexity:
+  Max: 12
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+Metrics/BlockLength:
+  AllowedMethods:
+    - no_commands
+  Exclude:
+    - "**/test/**/*"
+    - "**/*.gemspec"
+    - "Rakefile"
+
+Naming/FileName:
+  Exclude:
+    - "gems/*/lib/gemstack-*.rb"
+Naming/PredicateMethod:
+  Enabled: false
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+Gemspec/RequireMFA:
+  Enabled: false
+Naming/VariableNumber:
+  Exclude:
+    - "**/test/**/*"
+Style/OneClassPerFile:
+  Exclude:
+    - "**/test/**/*"
+Naming/MethodParameterName:
+  AllowedNames: [ts, id, io, to, as, at, on, of]
+# Tests favour explicit, readable assertions over short methods and lines.
+Metrics/AbcSize:
+  Max: 35
+  Exclude:
+    - "**/test/**/*"
+Metrics/MethodLength:
+  Max: 30
+  Exclude:
+    - "**/test/**/*"
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - "**/test/**/*"

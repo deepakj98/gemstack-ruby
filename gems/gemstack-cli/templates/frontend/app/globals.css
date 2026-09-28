@@ -1,0 +1,171 @@
+:root {
+  --bg: #ffffff;
+  --fg: #16181d;
+  --muted: #5b6170;
+  --code-bg: #f1f2f5;
+  --ok: #1f9d55;
+  --error: #d64545;
+  --pending: #d99a1e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --fg: #e6e8ee;
+    --muted: #9aa0ad;
+    --code-bg: #1c2030;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+code {
+  background: var(--code-bg);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 4rem 1rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--code-bg);
+}
+
+.dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  flex: none;
+}
+
+.status-ok .dot {
+  background: var(--ok);
+}
+
+.status-error .dot {
+  background: var(--error);
+}
+
+.status-pending .dot {
+  background: var(--pending);
+}
+
+a {
+  color: inherit;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+.page-header,
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.actions {
+  justify-content: flex-start;
+  margin-top: 1.5rem;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--fg);
+  border-radius: 6px;
+  background: var(--fg);
+  color: var(--bg);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button-danger {
+  background: var(--error);
+  border-color: var(--error);
+  color: #fff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--code-bg);
+  text-align: left;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+  max-width: 32rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.field input:not([type="checkbox"]),
+.field textarea {
+  padding: 0.45rem;
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.field-error,
+.form-error {
+  margin: 0;
+  color: var(--error);
+}
+
+.card {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1.5rem;
+}
+
+.card dt {
+  color: var(--muted);
+}
+
+.card dd {
+  margin: 0;
+}

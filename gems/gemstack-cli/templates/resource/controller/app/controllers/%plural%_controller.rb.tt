@@ -1,0 +1,48 @@
+# frozen_string_literal: true
+
+class <%= spec.plural_class %>Controller < ApplicationController
+<% if spec.action?(:create) -%>
+  accepts :create, with: <%= class_name %>.input_schema
+<% end -%>
+<% if spec.action?(:update) -%>
+  accepts :update, with: <%= class_name %>.input_schema, partial: true
+<% end -%>
+<% if spec.action?(:index) -%>
+
+  # GET /api/<%= spec.url_segment %>
+  def index
+    render <%= class_name %>.order(:id)
+  end
+<% end -%>
+<% if spec.action?(:show) -%>
+
+  # GET /api/<%= spec.url_segment %>/:id
+  def show
+    render <%= class_name %>.find(params[:id])
+  end
+<% end -%>
+<% if spec.action?(:create) -%>
+
+  # POST /api/<%= spec.url_segment %>
+  def create
+    render <%= class_name %>.create(input), status: :created
+  end
+<% end -%>
+<% if spec.action?(:update) -%>
+
+  # PATCH /api/<%= spec.url_segment %>/:id
+  def update
+    <%= spec.variable %> = <%= class_name %>.find(params[:id])
+    <%= spec.variable %>.update(input)
+    render <%= spec.variable %>
+  end
+<% end -%>
+<% if spec.action?(:destroy) -%>
+
+  # DELETE /api/<%= spec.url_segment %>/:id
+  def destroy
+    <%= class_name %>.find(params[:id]).destroy
+    head :no_content
+  end
+<% end -%>
+end
