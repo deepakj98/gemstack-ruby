@@ -105,7 +105,7 @@ class ResourceGeneratorTest < Minitest::Test
                     "attributes :id, :name, :price, :description, :sku, :category_id, :active, :released_on, :created_at, :updated_at"
     controller = read("app/controllers/products_controller.rb")
 
-    assert_includes controller, "returns :index, Page[ProductSerializer]"
+    assert_includes controller, "returns :index, GemStack::Page[ProductSerializer]"
     assert_includes controller, "render paginate(Product.order(:id))"
     assert_includes controller, "accepts :create, with: Product.input_schema"
     assert_includes controller, "accepts :update, with: Product.input_schema, partial: true"
@@ -215,5 +215,59 @@ class MigrationGeneratorTest < Minitest::Test
 
       assert_includes File.read(File.join(root, "db/migrations/20260101000000_backfill_prices.rb")), "# create_table"
     end
+  end
+end
+
+class JobGeneratorTest < Minitest::Test
+  def setup
+    @root = Dir.mktmpdir
+    FileUtils.mkdir_p("#{@root}/db/migrations")
+    @out = StringIO.new
+  end
+
+  def teardown = FileUtils.rm_rf(@root)
+
+  def generate(name, queue: nil) = GemStack::CLI::JobGenerator.new(name, queue: queue, root: @root, output: @out).run
+
+  def test_job_test_and_one_time_migration
+    generate("SendWelcomeEmail", queue: "mailers")
+    job = File.read("#{@root}/app/jobs/send_welcome_email.rb")
+
+    assert_includes job, "class SendWelcomeEmail < GemStack::Job"
+    assert_includes job, "queue :mailers"
+    assert_includes File.read("#{@root}/test/jobs/send_welcome_email_test.rb"), "assert_enqueued SendWelcomeEmail, args: [1]"
+    migrations = Dir.glob("#{@root}/db/migrations/*_create_gemstack_jobs.rb")
+
+    assert_equal 1, migrations.size
+    assert_includes File.read(migrations.first), "create_table(:gemstack_jobs)"
+
+    generate("ImportJob")
+
+    assert File.exist?("#{@root}/app/jobs/import_job.rb")
+    assert_equal 1, Dir.glob("#{@root}/db/migrations/*_create_gemstack_jobs.rb").size
+    Dir.glob("#{@root}/**/*.rb").each { |f| assert system(RbConfig.ruby, "-c", f, out: File::NULL), f }
+  end
+
+  def test_invalid_names
+    assert_raises(Thor::Error) { generate("send-email!") }
+  end
+
+  def test_names_clashing_with_ruby_constants_are_refused
+    error = assert_raises(Thor::Error) { generate("Digest") }
+
+    assert_includes error.message, "try DigestJob"
+    assert_raises(Thor::Error) { GemStack::CLI::ResourceSpec.new("Set", ["name"]) }
+    assert_raises(Thor::Error) { GemStack::CLI::ResourceSpec.new("Time", ["name"]) }
+    generate("DigestJob") # fine
+    GemStack::CLI::ResourceSpec.new("Page", ["title"]) # GemStack's own names are namespaced: allowed
+    GemStack::CLI::ResourceSpec.new("Job", ["title"])
+  end
+
+  def test_migration_timestamps_are_unique
+    time = Time.utc(2026, 1, 1, 12, 0, 0)
+    File.write("#{@root}/db/migrations/20260101120000_a.rb", "")
+    File.write("#{@root}/db/migrations/20260101120001_b.rb", "")
+
+    assert_equal "20260101120002", GemStack::CLI::Generator.migration_timestamp(@root, time)
   end
 end

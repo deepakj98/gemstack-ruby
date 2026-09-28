@@ -84,6 +84,13 @@ Replace it entirely with `GemStack.logger = MyLogger.new` (it must respond to
 | `config.cache.max_entries` | `10_000` (memory store) |
 | `config.cache.redis_url` / `redis_pool_size` | `REDIS_URL` / `GEMSTACK_MAX_THREADS` |
 
+### Jobs (`gemstack-jobs`)
+
+See [background jobs](background-jobs.md#configuration): `config.jobs.adapter`,
+`queues`, `concurrency`, `default_queue`, `default_priority`,
+`default_max_attempts`, `poll_interval`, `lock_timeout`, `shutdown_timeout`,
+`keep_failed`, and `config.dev.jobs_command`.
+
 ### Runtime
 
 | Setting | Default |

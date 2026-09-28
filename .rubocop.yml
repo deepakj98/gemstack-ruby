@@ -50,7 +50,7 @@ Style/OneClassPerFile:
     - "**/test/**/*"
     - "benchmarks/**/*"
 Naming/MethodParameterName:
-  AllowedNames: [ts, id, io, to, as, at, on, of, by]
+  AllowedNames: [ts, id, io, to, as, at, on, of, by, db]
 # Tests favour explicit, readable assertions over short methods and lines.
 Metrics/AbcSize:
   Max: 35

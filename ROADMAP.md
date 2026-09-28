@@ -79,7 +79,7 @@ documented before the next begins.
 - [x] Serializer optimisation from profiling evidence (3× faster, D-038)
 - [x] Caching foundations: `GemStack.cache`, memory / null / Redis stores (`gemstack-cache`)
 - [x] ETags / conditional GET (Rack) + `stale?` / `fresh_when` / `cache_control`
-- [x] Pagination convention for `index` actions, typed `Page<T>` in the contract, pager in generated pages
+- [x] Pagination convention for `index` actions, typed `Paginated<T>` in the contract, pager in generated pages
 - [x] Production review: YJIT by default (`config.jit`), compression levels, DB pool per thread
 - [x] End-to-end server benchmark (`benchmarks/server_bench.sh`)
 
@@ -92,12 +92,29 @@ documented before the next begins.
 - Not yet: cache stampede protection, keyset pagination, streaming compression for large
   bodies of unknown length, database benchmarks.
 
-## Phase 4 — Background processing
+## Phase 4 — Background processing  *(complete)*
 
-- [ ] `GemStack::Job` API, adapters: inline, async, postgres (default), sidekiq
-- [ ] Retries with backoff, dead set, failure hooks
-- [ ] Worker process in `gemstack dev`; `gemstack jobs` command
-- [ ] Structured job logs and metrics hooks
+- [x] `GemStack::Job` API: queue, priority, retry_on, discard_on, perform_later, set(wait:/at:), perform_now
+- [x] Adapters: postgres (default), async, inline, test, sidekiq — one shared executor
+- [x] PostgreSQL queue: transactional enqueue, SKIP LOCKED claiming, LISTEN/NOTIFY wake-up, polling fallback
+- [x] Retries with exponential backoff, discards, failed set, stale-lock recovery, graceful shutdown
+- [x] `gemstack jobs`, `jobs:status`, `jobs:failed`, `jobs:retry`, `jobs:discard`, `jobs:install`
+- [x] `generate job` (adds the table migration the first time); worker in `gemstack dev`
+- [x] Structured job logs + `GemStack::Jobs.subscribe` events; test helpers
+- [x] Example app: background announcement job, enqueued transactionally
+
+### Phase 4 verification
+
+- 349 tests across ten gems, 0 skipped with PostgreSQL + Redis; RuboCop clean.
+- Jobs suite against real PostgreSQL and Redis (Sidekiq bridge): transactional enqueue,
+  priority/run_at ordering, 4 concurrent workers claiming 20 jobs exactly once, NOTIFY latency,
+  retry/fail/discard settlement, stale-lock release, graceful shutdown.
+- Fresh app via the installed gems: `generate job`, enqueue inside `GemStack.transaction`,
+  worker started by `gemstack dev` ran the job 3 ms after the request committed.
+- Found and fixed: Sequel's JSONB parsing broken on json 3 (D-041), buffered log output (D-042),
+  duplicate migration timestamps, name collisions (`Digest`, `Page`) and a form typing bug (D-043).
+- `script/e2e`: generated app with every field type + edge cases → 65 generated tests, `tsc`, `next build` pass.
+- Not yet: recurring (cron) jobs, unique jobs, batches, a web dashboard.
 
 ## Phase 5 — Realtime
 

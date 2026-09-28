@@ -424,13 +424,13 @@ should disable compression for those responses
 (`headers["cache-control"] = "no-transform"`) or globally
 (`config.http.compression.enabled = false`). Documented in docs/performance.md.
 
-## D-034 Pagination envelope: `{ data, meta }`, typed as `Page<T>`
+## D-034 Pagination envelope: `{ data, meta }`, typed as `Paginated<T>`
 
 **Decision.** `paginate(dataset)` reads `page` / `per_page` (validated: 422 on
 invalid values; `per_page` clamped to `max_per_page`, default 100) and returns
 a `Page` that renders as `{"data": [...], "meta": {"page", "per_page", "total", "total_pages"}}`.
-`returns :index, Page[ProductSerializer]` makes the contract emit
-`list(query?: PageQuery): Promise<Page<Product>>`. Generated `index` actions
+`returns :index, GemStack::Page[ProductSerializer]` makes the contract emit
+`list(query?: PaginationQuery): Promise<Paginated<Product>>`. Generated `index` actions
 paginate by default, and generated pages keep `?page=` in the URL.
 
 **Reasoning.** Unbounded `index` responses are a production hazard. An
@@ -496,6 +496,73 @@ endpoint): interpreter 17.6k req/s, **YJIT 22.3k (+27%)**, ZJIT 18.8k (+7%). In
 micro-benchmarks YJIT made the serializer 42% faster and a request 26% faster.
 ZJIT is newer; revisit when it matures.
 
+## D-040 Background jobs: a built-in PostgreSQL queue by default (confirms P-103)
+
+**Options presented to the user:** a built-in PostgreSQL queue (recommended),
+Sidekiq as the default, or Que. Solid Queue and GoodJob were excluded because
+they require ActiveRecord and Railties (conflicts with D-018). **The user chose
+the built-in PostgreSQL queue.**
+
+**Design** (`gemstack-jobs`, which depends on core only; the `:postgres`
+adapter loads gemstack-db on demand):
+- **Enqueue:** a row in `gemstack_jobs`, inserted on the current connection.
+  Enqueueing inside a transaction is atomic with the data, and `NOTIFY`
+  (itself transactional) wakes idle workers.
+- **Workers:** each claims one job with
+  `UPDATE … WHERE id = (SELECT … FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING`.
+  Performing happens outside any transaction. Success deletes the row;
+  retries reschedule it with backoff; exhausted jobs keep `failed_at`.
+- **Crash safety:** a reaper releases locks older than `lock_timeout`, giving
+  at-least-once delivery. Graceful shutdown releases unfinished jobs.
+- **Consistency:** one `Executor` decides performed / retry / discard / fail
+  for every adapter (postgres, async, inline, test, sidekiq).
+- **Safety:** arguments are validated as JSON at enqueue time. Only
+  `GemStack::Job` subclasses are ever instantiated from a queue row.
+- **New apps stay empty:** the table's migration is added by the first
+  `generate job` (or `jobs:install`), not by `gemstack new`.
+
+**Measured:** in `gemstack dev`, a job was picked up 3 ms after the HTTP
+request that enqueued it committed (NOTIFY, not polling).
+
+## D-041 Compatibility patch: Sequel JSON parsing on json 3
+
+Sequel ≤ 5.108 calls `JSON.parse(json, create_additions: false)`; json 3.0
+removed that option, so every `jsonb` read raised `ArgumentError`. Found
+by the job queue tests, which read `jsonb` arguments. gemstack-db prepends
+`Sequel.parse_json` (a public Sequel hook) to call `JSON.parse(json)`, which
+never creates additions, so behaviour is unchanged. It applies only when
+json ≥ 3.0 is loaded, and a model test now reads JSONB. Remove it once Sequel
+ships a fix.
+
+## D-042 Log output is unbuffered
+
+Ruby buffers `$stdout` when it is a pipe, so under `gemstack dev` (or any
+process manager) a worker's log lines appeared only when it exited.
+`GemStack::Logger` now sets `sync = true` on its output. Generated
+migrations also get unique timestamps: two migrations generated in the same
+second no longer share a version.
+
+## D-043 Names: explicit namespaces, clash checks, and an end-to-end check
+
+Generated-app testing found name collisions that unit tests couldn't. The fixes:
+- **`GemStack::Page`, not `Page`.** Phase 3 aliased `Page` inside
+  controllers, which would shadow an app's own `Page` model. Pagination is now
+  always written `returns :index, GemStack::Page[ProductSerializer]`.
+- **TypeScript helpers are `Paginated<T>`, `PaginationMeta` and
+  `PaginationQuery`,** so a resource named `Page` produces valid TypeScript. The
+  contract refuses user types that take one of these reserved names, instead of
+  emitting duplicate identifiers.
+- **Generators refuse class names that clash** with Ruby core/stdlib or
+  loaded gems (a job named `Digest` would reopen Ruby's `Digest` module), and
+  suggest an alternative (`DigestJob`). GemStack's own names (`Job`, `Page`,
+  `Model`, …) are namespaced and stay usable as app names.
+- **Generated forms** cast their change handler's value to the field's type
+  (a single-field form failed `tsc`).
+- **`script/e2e`** generates an app with every field type and the known edge
+  cases (single field, `Page`, a reference, read-only, API-only, a job, a
+  reserved name), then runs its Ruby tests, `tsc` and `next build`. Run it
+  before releases.
+
 ---
 
 ## Proposed decisions (future phases)
@@ -515,7 +582,7 @@ full Sequel API available underneath.
 JSON numbers are IEEE doubles in JS; money must not lose precision. Default:
 `decimal` → JSON string → TS `string`. Configurable per field/app.
 
-### P-103 Default job backend on PostgreSQL (Phase 4) — Proposed
+### P-103 Default job backend on PostgreSQL — **Accepted as D-040**
 
 Most GemStack apps already run PostgreSQL; requiring Redis only for jobs adds
 infrastructure. Evaluate Que / GoodJob-style `SKIP LOCKED` designs; provide a

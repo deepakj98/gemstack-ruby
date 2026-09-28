@@ -44,6 +44,8 @@ module GemStack
         start_processes(api_port, web_port)
         @restart_watcher = FileWatcher.new(@dev.restart_on, root: @root, exclude: @dev.restart_exclude)
         @recovery_watcher = FileWatcher.new(["app/**/*", "config/**/*", "Gemfile.lock"], root: @root)
+        @jobs_watcher = FileWatcher.new(["app/**/*.rb", "db/migrations/*.rb"], root: @root) if @dev.jobs_command
+        start_jobs if jobs_enabled?
         if web_port && @dev.contract_command
           @contract_watcher = FileWatcher.new(@dev.contract_watch, root: @root)
           @contract_pending = true # generate once at startup
@@ -184,6 +186,33 @@ module GemStack
         web = @processes[:next]
         report_exit(web) if web && !web.running? && web.exited?
         supervise_contract
+        supervise_jobs
+      end
+
+      # A worker only makes sense with the PostgreSQL queue and its table.
+      def jobs_enabled?
+        return false unless @dev.jobs_command && defined?(GemStack::Jobs) && @config.respond_to?(:jobs)
+        return false unless @config.jobs.adapter.to_s == "postgres"
+
+        Dir.glob(@root.join("db/migrations/*_create_gemstack_jobs.rb").to_s).any?
+      end
+
+      def start_jobs
+        @processes[:jobs] = spawn("jobs", @dev.jobs_command, @root, { "GEMSTACK_ENV" => "development" })
+      end
+
+      # The worker doesn't reload code, so restart it when app/ changes
+      # (it finishes running jobs first), and start it once the jobs table exists.
+      def supervise_jobs
+        return unless @jobs_watcher&.changed?
+
+        jobs = @processes[:jobs]
+        if jobs&.running?
+          @terminal.line("gemstack", "app changed — restarting job worker")
+          jobs.restart
+        elsif jobs_enabled?
+          start_jobs
+        end
       end
 
       # One contract run at a time; changes during a run queue exactly one more.

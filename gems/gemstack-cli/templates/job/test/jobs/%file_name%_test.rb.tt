@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+require_relative "../test_helper"
+
+class <%= class_name %>Test < GemStack::TestCase
+  def test_enqueue
+    <%= class_name %>.perform_later(1)
+
+    assert_enqueued <%= class_name %>, args: [1]
+  end
+
+  def test_perform
+    perform_enqueued_jobs { <%= class_name %>.perform_later(1) }
+  end
+end

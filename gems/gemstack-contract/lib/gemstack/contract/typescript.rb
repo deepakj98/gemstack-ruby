@@ -24,19 +24,19 @@ module GemStack
 
       PAGE_TYPES = <<~TS
         /** The pagination envelope returned by `paginate` in controllers. */
-        export type PageMeta = {
+        export type PaginationMeta = {
           page: number;
           per_page: number;
           total: number;
           total_pages: number;
         };
 
-        export type Page<T> = {
+        export type Paginated<T> = {
           data: T[];
-          meta: PageMeta;
+          meta: PaginationMeta;
         };
 
-        export type PageQuery = {
+        export type PaginationQuery = {
           page?: number;
           per_page?: number;
         };
@@ -74,7 +74,7 @@ module GemStack
         elsif ref[:array]
           inner = ts_type(ref[:array], depth)
           inner.match?(/\A[\w.]+\z/) ? "#{inner}[]" : "Array<#{inner}>"
-        elsif ref[:page] then "Page<#{ts_type(ref[:page], depth)}>"
+        elsif ref[:page] then "Paginated<#{ts_type(ref[:page], depth)}>"
         elsif ref[:object] then object_type(ref[:object], depth)
         else "unknown"
         end
@@ -105,7 +105,7 @@ module GemStack
         collect_refs(endpoint[:response], refs)
         args << "data: #{ts_type(endpoint[:body])}" if endpoint[:body]
         args << query_arg(endpoint) if endpoint[:query] || endpoint[:paginated]
-        refs << "PageQuery" if endpoint[:paginated]
+        refs << "PaginationQuery" if endpoint[:paginated]
         args << "options?: RequestOptions"
         response = endpoint[:response] ? ts_type(endpoint[:response]) : "void"
         call = "api.#{client_verb(endpoint[:verb])}<#{response}>(#{call_args(endpoint)})"
@@ -117,9 +117,9 @@ module GemStack
       # with the action's own query schema when there is one.
       def query_arg(endpoint)
         return "query: #{ts_type(endpoint[:query])}" unless endpoint[:paginated]
-        return "query?: PageQuery" unless endpoint[:query]
+        return "query?: PaginationQuery" unless endpoint[:query]
 
-        "query: #{ts_type(endpoint[:query])} & PageQuery"
+        "query: #{ts_type(endpoint[:query])} & PaginationQuery"
       end
 
       def call_args(endpoint)
@@ -138,7 +138,7 @@ module GemStack
         return unless ref
 
         refs << ref[:ref] if ref[:ref]
-        refs << "Page" if ref[:page]
+        refs << "Paginated" if ref[:page]
         collect_refs(ref[:array], refs) if ref[:array]
         collect_refs(ref[:page], refs) if ref[:page]
       end

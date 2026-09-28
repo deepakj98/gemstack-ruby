@@ -109,4 +109,31 @@ class SupervisorTest < Minitest::Test
 
     refute_predicate api, :running?
   end
+
+  def test_job_worker_runs_only_with_the_postgres_queue_and_its_migration
+    require "gemstack/jobs"
+    config = GemStack::Config.new
+    config.dev.port = 0
+    config.dev.bind = ["127.0.0.1"]
+    config.dev.api_command = [RbConfig.ruby, "fake_api.rb"]
+    config.dev.jobs_command = [RbConfig.ruby, "-e", "$stdout.sync = true; puts 'fake worker'; sleep"]
+    config.jobs.adapter = :postgres
+    supervisor = GemStack::Dev::Supervisor.new(root: @root, config: config, env: {},
+                                               terminal: GemStack::Dev::Terminal.new(@io, color: false))
+    supervisor.start
+
+    refute supervisor.processes.key?(:jobs), "no gemstack_jobs migration yet"
+
+    FileUtils.mkdir_p("#{@root}/db/migrations")
+    File.write("#{@root}/db/migrations/20260101000000_create_gemstack_jobs.rb", "# jobs")
+    supervisor.send(:supervise)
+    wait_until { @io.string.include?("fake worker") }
+
+    assert_predicate supervisor.processes[:jobs], :running?
+    config.jobs.adapter = :async
+
+    refute supervisor.send(:jobs_enabled?)
+  ensure
+    supervisor&.shutdown
+  end
 end

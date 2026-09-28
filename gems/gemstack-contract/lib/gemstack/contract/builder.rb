@@ -19,6 +19,9 @@ module GemStack
     #   index → [<Resource>Serializer], show/create/update → <Resource>Serializer,
     #   destroy → no body, anything else → unknown (with a warning).
     class Builder
+      # Names the generated TypeScript defines itself.
+      RESERVED_TYPES = %w[Paginated PaginationMeta PaginationQuery RequestOptions].freeze
+
       METHOD_NAMES = { "index" => "list", "show" => "get", "create" => "create", "update" => "update",
                        "destroy" => "delete" }.freeze
       VERB_PREFERENCE = %w[GET POST PATCH PUT DELETE].freeze
@@ -31,6 +34,16 @@ module GemStack
       end
 
       def build
+        result = build_contract
+        clash = result[:types].keys & RESERVED_TYPES
+        unless clash.empty?
+          raise ConfigurationError, "API type name(s) #{clash.join(", ")} are reserved by the generated TypeScript; " \
+                                    "rename the serializer/schema or set its type_name"
+        end
+        result
+      end
+
+      def build_contract
         resources = @routes.select(&:controller).group_by(&:controller).sort.filter_map do |controller_name, routes|
           controller = resolve(controller_name) or next
           endpoints = routes.group_by(&:action).map do |action, action_routes|

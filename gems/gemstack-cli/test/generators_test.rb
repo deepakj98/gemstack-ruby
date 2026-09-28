@@ -88,6 +88,9 @@ class AppGeneratorTest < Minitest::Test
 
     assert_includes File.read(File.join(root, "Gemfile")), %(gem "gemstack-db")
     assert_includes File.read(File.join(root, "test/test_helper.rb")), "GemStack::DB::Testing.prepare!"
+    assert_includes File.read(File.join(root, "Gemfile")), %(gem "gemstack-jobs")
+    assert_includes File.read(File.join(root, "test/test_helper.rb")), "GemStack::TestCase.include GemStack::Jobs::Testing"
+    assert_empty Dir.glob(File.join(root, "db/migrations/*.rb")), "no tables until the app uses jobs"
     FileUtils.rm_rf(@tmp)
 
     root = generate(skip_database: true)

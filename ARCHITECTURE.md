@@ -76,8 +76,9 @@ GemStack is a monorepo of independent gems with one-directional dependencies.
                                    ▲
        gemstack-db (optional) ─────┴── gemstack-schema, sequel, pg
        gemstack-cache ─────────────┘   (umbrella includes it; Redis via optional redis-client)
+       gemstack-jobs ──────────────┘   (optional in the Gemfile; :postgres adapter loads gemstack-db on demand)
 
-Planned optional modules: gemstack-jobs, -realtime, -auth, -mailer, -storage
+Planned optional modules: gemstack-realtime, -auth, -mailer, -storage
 (each depends on core, and on http only if it serves HTTP).
 ```
 
@@ -86,7 +87,7 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 1. **`gemstack-core` depends on nothing** (Ruby stdlib only) and never
    references another GemStack gem.
 2. Dependencies only point down the order
-   `core → cache → schema → http → db → contract → dev → cli → umbrella`. **Core never
+   `core → cache → schema → http → db → jobs → contract → dev → cli → umbrella`. **Core never
    depends on an optional module**, and nothing depends on the umbrella.
 3. **`gemstack-db` never depends on `gemstack-http`**; it gives database errors
    their HTTP meaning through core's `ErrorMapping`.
@@ -101,6 +102,7 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 | `gemstack-schema` | shared `Types`, request `Schema`s, `Serializer`s (compiled plans) | core, bigdecimal |
 | `gemstack-http` | Rack request/response, router, middleware, controllers (`accepts`/`input`/`returns`, serializer lookup), params, JSON codec, error rendering | core, schema, rack, json |
 | `gemstack-db` | Sequel/PostgreSQL connection + pool, `GemStack::Model`, error mapping, migrations, db tasks, test support | core, schema, sequel, pg |
+| `gemstack-jobs` | `GemStack::Job`, adapters (postgres/async/inline/test/sidekiq), worker, test helpers | core (+ gemstack-db for :postgres) |
 | `gemstack-contract` | contract IR from routes/schemas/serializers → TypeScript types + clients, OpenAPI 3.1 | core, schema, http |
 | `gemstack-dev` | dev gateway, process supervisor, file watcher, background contract regeneration | core |
 | `gemstack-cli` | `gemstack` executable, generators (app, resource, model, migration, controller), `db:*`, `contract` | core, dev, thor |
@@ -333,7 +335,7 @@ Route table (verbs, paths, controllers) ─────────────�
   to them, never inside them.
 - The generator is Ruby — no Node dependency to produce TypeScript.
 
-## 9. Background jobs **[planned — Phase 4]**
+## 9. Background jobs **[built]** — see docs/background-jobs.md
 
 ```ruby
 class SendWelcomeEmail < GemStack::Job
@@ -344,14 +346,25 @@ end
 SendWelcomeEmail.perform_later(user.id)
 ```
 
-- `Job` is a thin class API; execution is delegated to an **adapter**:
-  `:inline` (tests), `:async` (in-process thread pool, dev), `:postgres`
-  (default production: `FOR UPDATE SKIP LOCKED` queue table — no Redis needed),
-  `:sidekiq` (bridge for teams already on Redis).
-- Arguments must be JSON-serialisable primitives (explicitly, no magic
-  object marshalling). Retries use exponential backoff with jitter; exhausted
-  jobs move to a dead set; every execution emits structured log events.
-- `gemstack dev` runs a worker process alongside the API when jobs are enabled.
+```text
+perform_later ──▶ Arguments.dump (JSON only) ──▶ adapter.enqueue
+                                                  ├─ :postgres  INSERT gemstack_jobs + NOTIFY (in the caller's transaction)
+                                                  ├─ :async     in-process schedule (after commit)
+                                                  ├─ :sidekiq   Sidekiq::Client.push (after commit)
+                                                  ├─ :test      recorded for assertions
+                                                  └─ :inline    run now
+
+gemstack jobs (Worker) ── N threads: claim (FOR UPDATE SKIP LOCKED) → Executor.execute → settle
+                      ├── LISTEN thread: NOTIFY → wake idle threads
+                      └── reaper: release locks older than lock_timeout
+Executor (shared by all adapters): performed | retry (backoff) | discarded | failed → events + logs
+```
+
+- `Job` is a thin class API (`queue`, `priority`, `retry_on`, `discard_on`,
+  `perform_later`, `set`, `perform_now`); adapters are swappable.
+- The `gemstack_jobs` table appears with the first `generate job`.
+- `gemstack dev` runs a worker when the app uses the PostgreSQL queue, and
+  restarts it when `app/` changes.
 
 ## 10. Realtime **[planned — Phase 5]**
 

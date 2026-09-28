@@ -55,7 +55,8 @@ export function <%= class_name %>Form({
   const set = (key: keyof Values) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const target = event.target;
     const value = target instanceof HTMLInputElement && target.type === "checkbox" ? target.checked : target.value;
-    setValues((current) => ({ ...current, [key]: value }));
+    // Checkboxes give booleans, other inputs strings — matching each field's type in Values.
+    setValues((current) => ({ ...current, [key]: value }) as Values);
   };
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

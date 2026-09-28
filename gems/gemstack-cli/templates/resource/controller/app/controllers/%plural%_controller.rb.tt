@@ -2,7 +2,7 @@
 
 class <%= spec.plural_class %>Controller < ApplicationController
 <% if spec.action?(:index) -%>
-  returns :index, Page[<%= class_name %>Serializer]
+  returns :index, GemStack::Page[<%= class_name %>Serializer]
 <% end -%>
 <% if spec.action?(:create) -%>
   accepts :create, with: <%= class_name %>.input_schema

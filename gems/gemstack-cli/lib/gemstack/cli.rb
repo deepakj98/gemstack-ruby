@@ -13,7 +13,9 @@ module GemStack
     require_relative "cli/resource_spec"
     require_relative "cli/resource_generator"
     require_relative "cli/migration_generator"
+    require_relative "cli/job_generator"
     require_relative "cli/commands/db"
+    require_relative "cli/commands/jobs"
 
     # Commands that need the application's bundle (see Project.ensure_bundle!).
     class << self
@@ -29,6 +31,8 @@ module GemStack
       # Shown in help output regardless of how the CLI was launched.
       def basename = "gemstack"
     end
+
+    GENERATORS = "resource, model, migration, controller, job"
 
     map %w[-v --version] => :version
     map "s" => :server
@@ -128,6 +132,9 @@ module GemStack
 
       gemstack generate controller Products index show publish
 
+      gemstack generate job SendWelcomeEmail [QUEUE]
+        app/jobs/send_welcome_email.rb + test (+ the gemstack_jobs migration the first time)
+
       Field syntax: name:type[:optional][:unique][:index]. Types: #{ResourceSpec::TYPES.join(", ")}.
       Fields are required unless marked :optional.
     DESC
@@ -154,8 +161,12 @@ module GemStack
       when "migration"
         abort("Usage: gemstack generate migration NAME [field:type ...]") unless name
         MigrationGenerator.new(name, args, root: root).run
-      when nil then abort("Usage: gemstack generate GENERATOR NAME. Generators: resource, model, migration, controller")
-      else abort("Unknown generator #{generator.inspect}. Available: resource, model, migration, controller")
+      when "job"
+        abort("Usage: gemstack generate job NAME [QUEUE]") unless name
+        JobGenerator.new(name, queue: args.first, root: root, force: options[:force]).run
+        say("\nNext: gemstack db:migrate (first job only) · #{Inflector.camelize(name)}.perform_later(...)")
+      when nil then abort("Usage: gemstack generate GENERATOR NAME. Generators: #{GENERATORS}")
+      else abort("Unknown generator #{generator.inspect}. Available: #{GENERATORS}")
       end
     end
 

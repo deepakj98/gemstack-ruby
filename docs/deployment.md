@@ -11,6 +11,13 @@ GEMSTACK_ENV=production GEMSTACK_API_PORT=4000 WEB_CONCURRENCY=2 bundle exec pum
 cd frontend && npm ci && npm run build && npm start
 ```
 
+Run background job workers as a third process type (scale them
+independently; any number can share the queue):
+
+```bash
+GEMSTACK_ENV=production DATABASE_URL=… bundle exec gemstack jobs -c 10
+```
+
 Run migrations on each release, before starting the new API processes:
 
 ```bash

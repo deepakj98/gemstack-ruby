@@ -2,8 +2,8 @@
 
 require "rake/testtask"
 
-GEMS = %w[gemstack-core gemstack-cache gemstack-schema gemstack-http gemstack-db gemstack-contract gemstack-dev
-          gemstack-cli gemstack].freeze
+GEMS = %w[gemstack-core gemstack-cache gemstack-schema gemstack-http gemstack-db gemstack-jobs gemstack-contract
+          gemstack-dev gemstack-cli gemstack].freeze
 
 namespace :test do
   GEMS.each do |name|
@@ -16,8 +16,10 @@ namespace :test do
 end
 
 # Dependency order: each gem only depends on gems before it (ARCHITECTURE §2).
-INSTALL_ORDER = %w[gemstack-core gemstack-cache gemstack-schema gemstack-http gemstack-db gemstack-contract gemstack-dev
-                   gemstack-cli gemstack].freeze
+INSTALL_ORDER = %w[
+  gemstack-core gemstack-cache gemstack-schema gemstack-http gemstack-db gemstack-jobs gemstack-contract
+  gemstack-dev gemstack-cli gemstack
+].freeze
 
 namespace :gems do
   require_relative "gems/gemstack-core/lib/gemstack/version"

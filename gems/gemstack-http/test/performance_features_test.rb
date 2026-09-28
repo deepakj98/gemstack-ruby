@@ -194,8 +194,12 @@ class ETagsAndCachingTest < Minitest::Test
     assert_equal ["must be greater than or equal to 1"], json(last_response)["errors"]["page"]
   end
 
+  def test_no_page_constant_shadows_app_models_in_controllers
+    refute GemStack::HTTP::Controller.const_defined?(:Page, false)
+  end
+
   def test_page_type_marker
-    type = GemStack::HTTP::Controller::Page[String]
+    type = GemStack::Page[String]
 
     assert_equal String, type.item
     assert_equal 0, GemStack::HTTP::Page.new([], page: 1, per_page: 10, total: 0).total_pages

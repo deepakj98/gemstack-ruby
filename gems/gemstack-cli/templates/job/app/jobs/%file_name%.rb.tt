@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+# Enqueue with <%= class_name %>.perform_later(...) — arguments must be JSON values (pass ids, not records).
+# Runs in `gemstack jobs` (and in `gemstack dev`). Delivery is at-least-once: keep perform idempotent.
+class <%= class_name %> < GemStack::Job
+<% if queue_name -%>
+  queue :<%= queue_name %>
+<% end -%>
+  # retry_on SomeTimeoutError, attempts: 5    # default: any StandardError, 10 attempts, exponential backoff
+  # discard_on GemStack::NotFound             # drop instead of retrying
+
+  def perform(*args)
+    GemStack.logger.info("<%= class_name %> ran", args: args)
+  end
+end

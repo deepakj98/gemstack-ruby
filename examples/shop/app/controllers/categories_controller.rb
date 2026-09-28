@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class CategoriesController < ApplicationController
-  returns :index, Page[CategorySerializer]
+  returns :index, GemStack::Page[CategorySerializer]
   accepts :create, with: Category.input_schema
   accepts :update, with: Category.input_schema, partial: true
 

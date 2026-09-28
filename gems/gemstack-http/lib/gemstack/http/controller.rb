@@ -39,9 +39,6 @@ module GemStack
 
       RescueHandler = Struct.new(:classes, :handler, :status, :code)
 
-      # So controllers can write `returns :index, Page[ProductSerializer]`.
-      Page = HTTP::Page
-
       class << self
         def before_callbacks = @before_callbacks ||= inherited_copy(:before_callbacks)
         def after_callbacks = @after_callbacks ||= inherited_copy(:after_callbacks)
@@ -189,7 +186,7 @@ module GemStack
       def serialize(value)
         case value
         when Hash, String, Numeric, Symbol, true, false, nil then value
-        when Page then { data: serialize(value.items), meta: value.meta }
+        when HTTP::Page then { data: serialize(value.items), meta: value.meta }
         when Array
           serializer = value.first && Serializer.for(value.first.class)
           serializer ? serializer.many(value, serializer_context) : value
@@ -220,7 +217,7 @@ module GemStack
         total = scope.count
         offset = (page - 1) * size
         items = scope.is_a?(Array) ? scope[offset, size] || [] : scope.limit(size).offset(offset).all
-        Page.new(items, page: page, per_page: size, total: total)
+        HTTP::Page.new(items, page: page, per_page: size, total: total)
       end
 
       PAGE_SCHEMA = Schema.define do
@@ -335,7 +332,7 @@ module GemStack
       end
 
       def apply_serializer(serializer, value)
-        return { data: serializer.many(value.items, serializer_context), meta: value.meta } if value.is_a?(Page)
+        return { data: serializer.many(value.items, serializer_context), meta: value.meta } if value.is_a?(HTTP::Page)
 
         list = value.is_a?(Array) || (value.respond_to?(:all) && value.respond_to?(:model))
         list ? serializer.many(value, serializer_context) : serializer.serialize(value, serializer_context)

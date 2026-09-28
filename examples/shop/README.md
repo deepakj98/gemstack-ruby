@@ -25,9 +25,9 @@ gemstack generate resource Product name:string price:decimal description:text:op
 | Next.js pages and components per resource | `frontend/app/products/`, `frontend/components/products/` |
 | Transactional tests with sample data from field declarations | `test/` |
 | OpenAPI 3.1 | `openapi.json` |
+| Background job enqueued in the same transaction as the product | `app/jobs/announce_product.rb`, `ProductsController#create` |
 
-Background jobs and realtime notifications will be added to this example when
-those phases land (see ROADMAP.md).
+Realtime notifications will be added to this example in Phase 5 (see ROADMAP.md).
 
 ## Run it
 

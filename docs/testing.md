@@ -55,6 +55,11 @@ product = Product.create(GemStack::DB::Testing.sample_attributes(Product, name: 
 post_json "/api/products", GemStack::DB::Testing.sample_payload(Product)
 ```
 
+## Jobs in tests
+
+Jobs are recorded, not run (`:test` adapter): `assert_enqueued`, `refute_enqueued`,
+`perform_enqueued_jobs` — see [background jobs](background-jobs.md#testing).
+
 `GemStack::TestCase` is a `Minitest::Test`; use `GemStack::Testing::Helpers` to
 mix the helpers into another base class. Logs are discarded in tests unless
 `GEMSTACK_LOG_LEVEL` is set.
@@ -68,6 +73,13 @@ creates one per action.
 ```bash
 bundle exec rake                 # every gem's suite + RuboCop
 bundle exec rake test:gemstack-dev
+```
+
+End-to-end check of the generators — creates an app with every field type and
+the known edge cases, then runs its Ruby tests, `tsc` and `next build`:
+
+```bash
+GEMSTACK_E2E_DATABASE_URL=postgres://user:pass@localhost:5432 script/e2e
 ```
 
 Database tests need PostgreSQL:

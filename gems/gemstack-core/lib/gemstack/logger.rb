@@ -27,6 +27,9 @@ module GemStack
 
     def initialize(output = $stdout, level: :info, format: :pretty, filter: [], context: {}, color: nil, mutex: nil)
       @output = output
+      # Log lines must appear when written, also when stdout is a pipe (e.g.
+      # under `gemstack dev` or a process manager) where Ruby would buffer them.
+      @output.sync = true if @output.respond_to?(:sync=)
       self.level = level
       @format = format.to_sym
       @filter = Array(filter).map { |f| f.to_s.downcase }

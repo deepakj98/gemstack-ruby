@@ -7,8 +7,9 @@ module GemStack
     #
     #   { "data": [ ... ], "meta": { "page": 2, "per_page": 25, "total": 180, "total_pages": 8 } }
     #
-    # Built by Controller#paginate. `Page[ProductSerializer]` is the matching
-    # type for `returns`, so the TypeScript client gets `Page<Product>`.
+    # Built by Controller#paginate. `GemStack::Page[ProductSerializer]` is the
+    # matching type for `returns`, so the TypeScript client gets `Paginated<Product>`.
+    # Always namespaced, so an app's own Page model never collides with it.
     class Page
       # Type marker for the contract: Page[ProductSerializer].
       Type = Struct.new(:item)
@@ -29,4 +30,7 @@ module GemStack
       def meta = { page: page, per_page: per_page, total: total, total_pages: total_pages }
     end
   end
+
+  # Public name, used in controllers: `returns :index, GemStack::Page[ProductSerializer]`.
+  Page = HTTP::Page
 end

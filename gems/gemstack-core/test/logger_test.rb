@@ -76,6 +76,15 @@ class LoggerTest < Minitest::Test
     assert_includes @io.string, "WARN  warned"
   end
 
+  def test_output_is_unbuffered
+    reader, writer = IO.pipe
+    GemStack::Logger.new(writer, color: false).info("now")
+
+    assert_includes reader.read_nonblock(100), "now"
+  ensure
+    [reader, writer].each { |io| io&.close }
+  end
+
   def test_invalid_level
     assert_raises(ArgumentError) { logger(level: :loud) }
   end

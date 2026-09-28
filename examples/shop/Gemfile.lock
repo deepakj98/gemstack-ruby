@@ -34,6 +34,8 @@ PATH
       gemstack-schema (= 0.1.0)
       json (>= 2.10)
       rack (~> 3.1)
+    gemstack-jobs (0.1.0)
+      gemstack-core (= 0.1.0)
     gemstack-schema (0.1.0)
       bigdecimal (>= 3.1)
       gemstack-core (= 0.1.0)
@@ -91,6 +93,7 @@ DEPENDENCIES
   gemstack-db!
   gemstack-dev!
   gemstack-http!
+  gemstack-jobs!
   gemstack-schema!
   irb
   minitest (~> 5.25)
@@ -108,6 +111,7 @@ CHECKSUMS
   gemstack-db (0.1.0)
   gemstack-dev (0.1.0)
   gemstack-http (0.1.0)
+  gemstack-jobs (0.1.0)
   gemstack-schema (0.1.0)
   io-console (0.9.4) sha256=a403304f32928ee85e56d457b4612ca43f2703b561a3258844992bd24085fbb1
   irb (1.18.0) sha256=de9454a0703a54704b9811a5ef31a60c86949fbf4013fcf244fabc7c775248e3

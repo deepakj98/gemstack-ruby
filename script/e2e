@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# End-to-end check of the generators: builds a real app from this checkout,
+# generates resources that cover the edge cases, then runs the generated Ruby
+# tests, the TypeScript typecheck and a Next.js production build.
+#
+#   GEMSTACK_E2E_DATABASE_URL=postgres://user:pass@localhost:5432 script/e2e
+#
+# Needs PostgreSQL (the URL is a server; databases e2e_app_* are created and
+# dropped), Node.js and network access for npm on the first run.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SERVER="${GEMSTACK_E2E_DATABASE_URL:?set GEMSTACK_E2E_DATABASE_URL to a PostgreSQL server URL (no database name)}"
+WORK="$(mktemp -d)"
+APP="$WORK/e2e_app"
+trap 'rm -rf "$WORK"' EXIT
+
+step() { printf "\n\033[1m== %s\033[0m\n" "$*"; }
+
+step "gemstack new"
+"$ROOT/bin/gemstack" new "$APP" --skip-git > "$WORK/new.log" 2>&1 || { cat "$WORK/new.log"; exit 1; }
+cd "$APP"
+printf "DATABASE_URL=%s/e2e_app_development\nTEST_DATABASE_URL=%s/e2e_app_test\n" "$SERVER" "$SERVER" > .env
+bin/gemstack db:drop > /dev/null 2>&1 || true
+bin/gemstack db:create
+
+step "generate resources covering the edge cases"
+bin/gemstack g resource Category name:string:unique
+bin/gemstack g resource Product name:string price:decimal description:text:optional sku:string:unique \
+  category:references active:boolean stock:integer weight:float:optional released_on:date:optional \
+  published_at:datetime:optional token:uuid:optional meta:json:optional
+bin/gemstack g resource Note body:text                              # single field
+bin/gemstack g resource Page title:string slug:string:unique        # collides with GemStack's Page names
+bin/gemstack g resource Report title:string --actions=index,show    # read-only
+bin/gemstack g resource AuditLog message:text --api-only            # no frontend
+bin/gemstack g job SendDigest mailers
+if bin/gemstack g job Digest > /dev/null 2>&1; then echo "expected 'Digest' to be refused"; exit 1; fi
+
+step "migrate + Ruby tests"
+bin/gemstack db:migrate
+bin/gemstack test
+
+step "TypeScript"
+(cd frontend && npx tsc --noEmit)
+
+step "Next.js production build"
+(cd frontend && npx next build > "$WORK/build.log" 2>&1) || { tail -40 "$WORK/build.log"; exit 1; }
+
+step "cleanup"
+bin/gemstack db:drop > /dev/null
+GEMSTACK_ENV=test bin/gemstack db:drop > /dev/null
+echo "e2e passed"

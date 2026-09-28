@@ -140,7 +140,7 @@ rescue_from Faraday::TimeoutError, status: 504                   # envelope with
 ## Pagination
 
 ```ruby
-returns :index, Page[ProductSerializer]      # TypeScript: list(query?: PageQuery): Promise<Page<Product>>
+returns :index, GemStack::Page[ProductSerializer]      # TypeScript: list(query?: PaginationQuery): Promise<Paginated<Product>>
 
 def index
   render paginate(Product.where(active: true).order(:name))           # ?page=2&per_page=50

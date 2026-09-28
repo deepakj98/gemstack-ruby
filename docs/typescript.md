@@ -21,7 +21,7 @@ with a "do not edit" header; hand-written code lives beside them.
 ```ts
 import { products, type Product, type ProductInput } from "@/lib/api/generated";
 
-const page = await products.list({ page: 2 });          // Page<Product>: { data, meta }
+const page = await products.list({ page: 2 });          // Paginated<Product>: { data, meta }
 const one = await products.get(42);
 const created = await products.create({ name: "Lamp", price: "9.99", sku: "L1", category_id: 1 });
 await products.update(42, { price: "12.00" });            // ProductUpdateInput: all optional
@@ -43,9 +43,9 @@ Every call accepts a final `options` argument (`RequestOptions`: headers,
 | `accepts(:search) { … }` | `type ProductSearchInput` (query for GET) |
 | route `GET /products/:id` → `show` | `get: (id: string \| number, options?) => Promise<Product>` |
 
-Paginated actions (`returns :index, Page[ProductSerializer]`, which generated
-controllers declare) return `Page<Product>` and take an optional
-`PageQuery` (`{ page?, per_page? }`), combined with the action's own query
+Paginated actions (`returns :index, GemStack::Page[ProductSerializer]`, which generated
+controllers declare) return `Paginated<Product>` and take an optional
+`PaginationQuery` (`{ page?, per_page? }`), combined with the action's own query
 schema if it has one.
 
 Response conventions without a declaration: `index` → `Product[]`, `show`/`create`/`update` →

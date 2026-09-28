@@ -40,9 +40,9 @@ class CtWidgetsController < GemStack::HTTP::Controller
 end
 
 class CtGadgetsController < GemStack::HTTP::Controller
-  returns :index, Page[CtPartSerializer]
+  returns :index, GemStack::Page[CtPartSerializer]
   accepts(:search) { optional :q, :string }
-  returns :search, Page[CtPartSerializer]
+  returns :search, GemStack::Page[CtPartSerializer]
 
   def index; end
   def search; end
@@ -85,12 +85,12 @@ class ContractTest < Minitest::Test
     assert_equal({ page: { ref: "CtPart" } }, e["list"][:response])
     ts = GemStack::Contract::TypeScript.new(contract).files
 
-    assert_includes ts["types.ts"], "export type Page<T> = {"
+    assert_includes ts["types.ts"], "export type Paginated<T> = {"
     assert_includes ts["ct_gadgets.ts"],
-                    "list: (query?: PageQuery, options?: RequestOptions) => " \
-                    "api.get<Page<CtPart>>(\"/ct-gadgets\", { ...options, query }),"
-    assert_includes ts["ct_gadgets.ts"], "search: (query: CtGadgetSearchInput & PageQuery, options?: RequestOptions)"
-    assert_includes ts["ct_gadgets.ts"], "import type { CtGadgetSearchInput, CtPart, Page, PageQuery } from"
+                    "list: (query?: PaginationQuery, options?: RequestOptions) => " \
+                    "api.get<Paginated<CtPart>>(\"/ct-gadgets\", { ...options, query }),"
+    assert_includes ts["ct_gadgets.ts"], "search: (query: CtGadgetSearchInput & PaginationQuery, options?: RequestOptions)"
+    assert_includes ts["ct_gadgets.ts"], "import type { CtGadgetSearchInput, CtPart, Paginated, PaginationQuery } from"
     doc = GemStack::Contract::OpenAPI.new(contract).document
     list = doc[:paths]["/api/ct-gadgets"]["get"]
 
@@ -197,6 +197,23 @@ class ContractTest < Minitest::Test
     assert_equal %w[name price], doc[:components][:schemas]["CtWidgetInput"][:required]
     assert_equal "q", doc[:paths]["/api/widgets/search"]["get"][:parameters].first[:name]
     assert doc[:components][:schemas]["Error"]
+  end
+
+  def test_a_user_type_named_like_generated_helpers_is_refused
+    serializer = Class.new(GemStack::Serializer) { attributes id: :integer }
+    serializer.type_name = "Paginated"
+    Object.const_set(:CtClashController, Class.new(GemStack::HTTP::Controller) do
+      define_method(:show) { nil }
+    end)
+    Object.const_set(:CtClashSerializer, serializer)
+    router = GemStack::HTTP::Router.new(prefix: "/api").draw { get "/clash/:id", to: "ct_clash#show" }
+
+    error = assert_raises(GemStack::ConfigurationError) do
+      GemStack::Contract.build(FakeApp.new(router.routes, GemStack::Config.new))
+    end
+    assert_includes error.message, "Paginated"
+  ensure
+    %i[CtClashController CtClashSerializer].each { |c| Object.send(:remove_const, c) if Object.const_defined?(c) }
   end
 
   def test_write_only_touches_changed_files_and_removes_stale_ones

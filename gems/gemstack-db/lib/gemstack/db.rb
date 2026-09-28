@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 require "sequel"
+require "json"
 require "gemstack/core"
 require "gemstack/schema"
+
+require_relative "db/json_compat"
 
 module GemStack
   # PostgreSQL through Sequel (DECISIONS D-018). Optional: add

@@ -25,6 +25,39 @@ module GemStack
 
       def template_root(name) = File.join(TEMPLATES, name)
 
+      # Ruby core/stdlib names an app class must not reuse (a top-level class
+      # named Digest or Set would collide with Ruby's own). Constants already
+      # defined in this process (stdlib and gems loaded by the CLI) are
+      # checked too; the app's own code isn't loaded here, so those are always
+      # foreign.
+      RESERVED = %w[
+        Array BasicObject Benchmark Binding Class Comparable Data Date DateTime Digest Dir Encoding Enumerable
+        Enumerator Errno Exception FalseClass Fiber File FileTest FileUtils Float GC Hash IO Integer JSON Kernel
+        Logger Marshal MatchData Math Method Module Monitor Mutex NilClass Numeric Object ObjectSpace Observable
+        OpenStruct Pathname Proc Process Queue Random Range Rational Regexp Ripper Set Signal Socket String
+        StringIO Struct Symbol Thread Time Timeout TracePoint TrueClass URI Warning Zlib Rack Sequel Thor Puma
+        GemStack
+      ].freeze
+
+      def self.check_constant!(name, suggestion: nil)
+        top = name.to_s.split("::").first
+        return unless RESERVED.include?(top) || Object.const_defined?(top, false)
+
+        hint = suggestion ? " — try #{suggestion}" : ""
+        raise Thor::Error, "#{name} would clash with Ruby's (or a loaded gem's) #{top} constant#{hint}"
+      end
+
+      # A migration version not used yet in db/migrations: generating several
+      # migrations within one second must not give them the same version.
+      def self.migration_timestamp(root, time = Time.now.utc)
+        loop do
+          stamp = time.strftime("%Y%m%d%H%M%S")
+          return stamp if Dir.glob(File.join(root.to_s, "db/migrations/#{stamp}_*.rb")).empty?
+
+          time += 1
+        end
+      end
+
       # Every template file for a generator, with app overrides applied.
       def template_files(name, override_root: nil)
         files = relative_files(template_root(name)).to_h { |rel| [rel, File.join(template_root(name), rel)] }

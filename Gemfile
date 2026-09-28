@@ -12,6 +12,7 @@ path "gems" do
   gem "gemstack-db"
   gem "gemstack-dev"
   gem "gemstack-http"
+  gem "gemstack-jobs"
   gem "gemstack-schema"
 end
 
@@ -24,4 +25,5 @@ group :development, :test do
   gem "rake", "~> 13.0"
   gem "redis-client", "~> 0.25" # optional in apps (cache :redis store); tested here
   gem "rubocop", "~> 1.81", require: false
+  gem "sidekiq", "~> 8.1" # optional in apps (jobs :sidekiq adapter); tested here
 end

@@ -32,6 +32,9 @@ module GemStack
       # (only when the app has a frontend). nil disables.
       setting :contract_command, default: %w[bundle exec gemstack contract --quiet]
       setting :contract_watch, default: ["app/**/*.rb", "config/routes.rb"]
+      # Background job worker, run when the app uses the :postgres job
+      # adapter and has the gemstack_jobs migration. Restarted when app/ changes.
+      setting :jobs_command, default: %w[bundle exec gemstack jobs]
     end
   end
 

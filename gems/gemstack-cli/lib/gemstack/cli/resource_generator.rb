@@ -30,7 +30,7 @@ module GemStack
         @root = root
         @parts = parts
         @tests = tests
-        @timestamp = timestamp || Time.now.utc.strftime("%Y%m%d%H%M%S")
+        @timestamp = timestamp || Generator.migration_timestamp(root)
       end
 
       def run

@@ -35,6 +35,7 @@ module GemStack
                 "Invalid resource name #{name.inspect}: use a single CamelCase or snake_case name (e.g. Product)"
         end
 
+        Generator.check_constant!(@name, suggestion: "#{@name}Record") unless @name == "Migration"
         @fields = field_args.map { |arg| parse_field(arg) }
         duplicates = @fields.group_by(&:column).select { |_, list| list.size > 1 }.keys
         raise Thor::Error, "Duplicate field(s): #{duplicates.join(", ")}" unless duplicates.empty?

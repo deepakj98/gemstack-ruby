@@ -170,6 +170,18 @@ class ModelTest < Minitest::Test
     assert_equal "9.5", MtProductSerializer.serialize(product)[:price]
   end
 
+  def test_jsonb_columns_round_trip
+    db.create_table!(:mt_documents) do
+      primary_key :id
+      column :data, :jsonb, null: false
+    end
+    db[:mt_documents].insert(data: Sequel.pg_jsonb_wrap({ "tags" => ["a"], "n" => 1 }))
+
+    assert_equal({ "tags" => ["a"], "n" => 1 }, db[:mt_documents].first[:data].to_h)
+  ensure
+    db.drop_table?(:mt_documents)
+  end
+
   def test_transactions
     GemStack.transaction do
       MtProduct.create(name: "Lamp", price: 1)

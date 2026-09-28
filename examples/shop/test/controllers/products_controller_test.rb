@@ -35,6 +35,7 @@ class ProductsControllerTest < GemStack::TestCase
 
     assert_status 201
     assert Product[json_body["id"]]
+    assert_enqueued AnnounceProduct, args: [json_body["id"]]
   end
 
   def test_create_with_invalid_input

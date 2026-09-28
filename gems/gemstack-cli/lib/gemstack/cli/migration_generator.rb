@@ -15,7 +15,7 @@ module GemStack
         @file_name = Inflector.underscore(name.to_s)
         raise Thor::Error, "Invalid migration name #{name.inspect}" unless @file_name.match?(/\A[a-z][a-z0-9_]*\z/)
 
-        @timestamp = timestamp || Time.now.utc.strftime("%Y%m%d%H%M%S")
+        @timestamp = timestamp || Generator.migration_timestamp(root)
         @table = @file_name[/\Aadd_\w+_to_(\w+)\z/, 1]
         spec = ResourceSpec.new("Migration", field_args)
         builder = ResourceGenerator.new(spec, root: root, output: output)

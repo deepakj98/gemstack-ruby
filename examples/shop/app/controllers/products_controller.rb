@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class ProductsController < ApplicationController
-  returns :index, Page[ProductSerializer]
+  returns :index, GemStack::Page[ProductSerializer]
   accepts :create, with: Product.input_schema
   accepts :update, with: Product.input_schema, partial: true
 
@@ -30,7 +30,11 @@ class ProductsController < ApplicationController
 
   # POST /api/products
   def create
-    render Product.create(input), status: :created
+    # The job row is inserted in the same transaction: no product, no job.
+    product = GemStack.transaction do
+      Product.create(input).tap { |created| AnnounceProduct.perform_later(created.id) }
+    end
+    render product, status: :created
   end
 
   # PATCH /api/products/:id

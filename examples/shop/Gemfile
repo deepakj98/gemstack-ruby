@@ -11,6 +11,7 @@ path "../../gems" do
   gem "gemstack-db"
   gem "gemstack-dev"
   gem "gemstack-http"
+  gem "gemstack-jobs"
   gem "gemstack-schema"
 end
 gem "puma", ">= 6.4"
