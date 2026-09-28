@@ -184,20 +184,9 @@ module GemStack
       # arrays and datasets of them). Values without a serializer go to the
       # JSON codec as they are. Override for custom behaviour.
       def serialize(value)
-        case value
-        when Hash, String, Numeric, Symbol, true, false, nil then value
-        when HTTP::Page then { data: serialize(value.items), meta: value.meta }
-        when Array
-          serializer = value.first && Serializer.for(value.first.class)
-          serializer ? serializer.many(value, serializer_context) : value
-        else
-          if value.respond_to?(:model) && value.respond_to?(:all) # a dataset / query
-            serializer = Serializer.for(value.model)
-            return serializer ? serializer.many(value, serializer_context) : value.all
-          end
-          serializer = Serializer.for(value.class)
-          serializer ? serializer.serialize(value, serializer_context) : value
-        end
+        return { data: serialize(value.items), meta: value.meta } if value.is_a?(HTTP::Page)
+
+        Serializer.render(value, serializer_context)
       end
 
       # Paginates a dataset (or array) using the `page` and `per_page` query

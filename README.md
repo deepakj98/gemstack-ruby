@@ -23,13 +23,14 @@ gemstack dev          # → http://localhost:3000
          Next.js           /api/*  → Ruby (Rack + Puma)
 ```
 
-> **Status: Phases 1–4 complete — see [ROADMAP.md](ROADMAP.md).**
+> **Status: Phases 1–5 complete — see [ROADMAP.md](ROADMAP.md).**
 > Built: HTTP layer, router, middleware, controllers, single-origin dev server,
 > Next.js + TypeScript template, PostgreSQL models (Sequel), migrations,
 > validation, serializers, TypeScript/OpenAPI contract, `generate resource`.
 > Phase 3: compression, ETags/304, pagination, `GemStack.cache`, YJIT by default, benchmarks.
 > Phase 4: background jobs on PostgreSQL (transactional, SKIP LOCKED, NOTIFY), Sidekiq adapter.
-> Next: realtime (Phase 5).
+> Phase 5: realtime — `GemStack.broadcast` → Server-Sent Events, PostgreSQL fan-out, `useRealtime`.
+> Next: authentication, authorization, mail, storage (Phase 6).
 > Docs for planned modules are marked as such.
 
 ## Why
@@ -96,6 +97,7 @@ const created: Product = await products.create({ name: "Lamp", price: "9.99" });
 | `gemstack db:create\|migrate\|rollback\|status\|seed\|setup\|reset\|drop` | database |
 | `gemstack contract` | regenerate TypeScript types, API client, OpenAPI |
 | `gemstack generate job NAME` / `gemstack jobs` | background job / run a worker (`jobs:status`, `jobs:retry`) |
+| `gemstack add realtime` | optional realtime module (broadcasts → browsers) |
 | `gemstack test` / `t` | run Ruby tests |
 | `gemstack console` / `c` | IRB with the app loaded |
 | `gemstack version` | |
@@ -140,6 +142,7 @@ gems/
   gemstack-http/     router, middleware, controllers, params, JSON (Rack 3)
   gemstack-db/       PostgreSQL via Sequel: models, migrations, db tasks (optional)
   gemstack-jobs/     background jobs: PostgreSQL queue, adapters, worker
+  gemstack-realtime/ GemStack.broadcast → Server-Sent Events (optional: gemstack add realtime)
   gemstack-contract/ TypeScript types, API clients, OpenAPI from the backend
   gemstack-dev/    dev gateway, process supervisor, file watcher
   gemstack-cli/    `gemstack` command, generators, templates
@@ -176,10 +179,9 @@ bundle exec rake bench
 
 [Models & database](docs/models.md) · [Validation](docs/validation.md) ·
 [Serialization](docs/serialization.md) · [Caching](docs/caching.md) ·
-[Background jobs](docs/background-jobs.md)
+[Background jobs](docs/background-jobs.md) · [Realtime](docs/realtime.md)
 
 Planned modules:
-[realtime](docs/realtime.md) ·
 [authentication](docs/authentication.md) · [authorization](docs/authorization.md) ·
 [storage](docs/storage.md)
 

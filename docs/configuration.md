@@ -91,6 +91,12 @@ See [background jobs](background-jobs.md#configuration): `config.jobs.adapter`,
 `default_max_attempts`, `poll_interval`, `lock_timeout`, `shutdown_timeout`,
 `keep_failed`, and `config.dev.jobs_command`.
 
+### Realtime (`gemstack-realtime`)
+
+See [realtime](realtime.md#configuration): `config.realtime.broker`, `path`,
+`heartbeat`, `replay_size`, `replay_ttl`, `max_channels`, `max_buffer`,
+`retry_ms`, `redis_url`, `redis_channel`.
+
 ### Runtime
 
 | Setting | Default |

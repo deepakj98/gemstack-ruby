@@ -7,11 +7,14 @@ class AnnounceProductTest < GemStack::TestCase
     product = Product.create(GemStack::DB::Testing.sample_attributes(Product))
 
     perform_enqueued_jobs { AnnounceProduct.perform_later(product.id) }
+
+    assert_broadcast "products", "product.created", data: ProductSerializer.serialize(product)
   end
 
   def test_a_deleted_product_is_discarded_not_retried
     outcomes = perform_enqueued_jobs { AnnounceProduct.perform_later(0) }
 
     assert_equal [:discarded], outcomes.map(&:status)
+    refute_broadcast "products"
   end
 end

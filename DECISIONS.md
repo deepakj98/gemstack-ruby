@@ -563,6 +563,69 @@ Generated-app testing found name collisions that unit tests couldn't. The fixes:
   reserved name), then runs its Ruby tests, `tsc` and `next build`. Run it
   before releases.
 
+## D-044 Realtime: SSE over hijacked sockets, PostgreSQL fan-out (confirms P-104)
+
+**Decision.** `gemstack-realtime` (optional; added with `gemstack add realtime`):
+- **API:** `GemStack.broadcast(channel, event, data)` serializes data like
+  `render` (the shared `Serializer.render`).
+- **Endpoint and connections:** `GET <api_path>/realtime?channels=…` serves
+  Server-Sent Events. The socket is taken over from Puma (Rack full hijack)
+  and handed to one nio4r event loop per process, which handles writes,
+  disconnect detection and heartbeats.
+- **Fan-out:** a pluggable broker, PostgreSQL LISTEN/NOTIFY by default
+  (Redis, memory and test brokers also available).
+- **Replay:** a per-process replay buffer (Last-Event-ID), and `gemstack.gap`
+  when replay is impossible.
+- **Channel rules:** deny-by-default channels in `config/channels.rb`, with
+  pattern captures passed to authorization blocks.
+- **Client:** `realtime.ts` multiplexes one EventSource per tab and provides
+  `useRealtime`.
+
+**Why SSE and no WebSocket transport in this phase.** Notifications, live
+updates, dashboards and chat-receive are one-way server → client flows, and
+client → server messages are ordinary API requests (with validation,
+authorization and the contract). SSE is plain HTTP: it passed through the dev
+gateway, Next.js rewrites (verified in production mode) and proxies without
+special handling, and browsers reconnect with Last-Event-ID on their own. A
+WebSocket transport would add a dependency (`websocket-driver`) and a second
+code path for little gain. The broker/hub/connection split leaves room for one
+later.
+
+**Why hijack + nio4r.** Holding a Puma thread per open stream would cap
+realtime users at the thread count. nio4r is already installed with Puma.
+Measured: 20 open streams on a 2-thread server, and ordinary requests are still
+answered.
+
+**Measured end to end** (`gemstack dev`, examples/shop): POST → transaction
+(product + job) → worker → `GemStack.broadcast` → NOTIFY → API process → SSE
+through the gateway, in **41 ms**.
+
+**Limits.** PostgreSQL NOTIFY payloads are ≤ 8 KB (a clear error points to
+smaller payloads or the Redis broker). Replay is per process and bounded.
+There is no presence yet.
+
+## D-045 One refused channel doesn't fail the stream
+
+Because a tab multiplexes all its channels on one stream, a 403 for one
+channel would silently drop all the others. The endpoint serves the
+authorized channels and sends `gemstack.denied` to the refused channel's
+handlers; it returns 403 only when nothing is allowed. Found while running the
+real TypeScript client against a live server.
+
+## D-046 Findings recorded during Phase 5
+
+- **Recursive lock:** `Realtime.listen!` held the module mutex while lazily
+  building the broker, which takes the same mutex, so the first real
+  connection deadlocked. Tests had preset the broker; a regression test now
+  covers the lazy path.
+- **Identity sets:** the hub uses identity-based sets, so a subscriber whose
+  state changes can still be removed.
+- **`Regexp.last_match`:** `gemstack add` read `Regexp.last_match` after
+  another regex inside the same block had overwritten it, so the `path` line
+  was lost. Capture groups are now read before running other regexes.
+- **SSE through Next.js rewrites** was claimed in D-010 but unverified; it is
+  now verified in production mode.
+
 ---
 
 ## Proposed decisions (future phases)
@@ -589,7 +652,7 @@ infrastructure. Evaluate Que / GoodJob-style `SKIP LOCKED` designs; provide a
 Sidekiq adapter for Redis users. The adapter interface keeps the choice
 reversible.
 
-### P-104 SSE by default for realtime, WebSocket as adapter (Phase 5) — Proposed
+### P-104 SSE by default for realtime — **Accepted as D-044** (WebSocket transport deferred)
 
 See ARCHITECTURE §10. Fan-out through Postgres `LISTEN/NOTIFY` by default.
 

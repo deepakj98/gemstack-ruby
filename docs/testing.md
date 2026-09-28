@@ -55,6 +55,11 @@ product = Product.create(GemStack::DB::Testing.sample_attributes(Product, name: 
 post_json "/api/products", GemStack::DB::Testing.sample_payload(Product)
 ```
 
+## Realtime in tests
+
+Broadcasts are recorded: `assert_broadcast "orders:1", "order.updated"`,
+`refute_broadcast` — see [realtime](realtime.md#testing).
+
 ## Jobs in tests
 
 Jobs are recorded, not run (`:test` adapter): `assert_enqueued`, `refute_enqueued`,

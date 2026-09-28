@@ -36,6 +36,11 @@ PATH
       rack (~> 3.1)
     gemstack-jobs (0.1.0)
       gemstack-core (= 0.1.0)
+    gemstack-realtime (0.1.0)
+      gemstack-core (= 0.1.0)
+      gemstack-http (= 0.1.0)
+      gemstack-schema (= 0.1.0)
+      nio4r (~> 2.7)
     gemstack-schema (0.1.0)
       bigdecimal (>= 3.1)
       gemstack-core (= 0.1.0)
@@ -119,6 +124,7 @@ DEPENDENCIES
   gemstack-dev!
   gemstack-http!
   gemstack-jobs!
+  gemstack-realtime!
   gemstack-schema!
   minitest (~> 5.25)
   oj (~> 3.16)

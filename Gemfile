@@ -13,6 +13,7 @@ path "gems" do
   gem "gemstack-dev"
   gem "gemstack-http"
   gem "gemstack-jobs"
+  gem "gemstack-realtime"
   gem "gemstack-schema"
 end
 

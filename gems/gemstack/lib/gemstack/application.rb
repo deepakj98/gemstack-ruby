@@ -22,6 +22,7 @@ module GemStack
       @booted = false
       @boot_lock = Mutex.new
       @shutdown_hooks = []
+      @reload_hooks = []
     end
 
     def root = Pathname.new(config.root)
@@ -70,12 +71,18 @@ module GemStack
       @loader&.reload
       @router = build_router { load_routes }
       @http.router = @router
+      @reload_hooks.each(&:call)
       GemStack.logger.debug("reloaded application code")
       true
     end
 
     def eager_load!
       @loader&.eager_load
+    end
+
+    # Runs after code and routes reload (development), e.g. to re-read config/channels.rb.
+    def on_reload(&block)
+      @reload_hooks << block
     end
 
     def on_shutdown(&block)

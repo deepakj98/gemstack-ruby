@@ -77,8 +77,9 @@ GemStack is a monorepo of independent gems with one-directional dependencies.
        gemstack-db (optional) ─────┴── gemstack-schema, sequel, pg
        gemstack-cache ─────────────┘   (umbrella includes it; Redis via optional redis-client)
        gemstack-jobs ──────────────┘   (optional in the Gemfile; :postgres adapter loads gemstack-db on demand)
+       gemstack-realtime ── core, schema, http, nio4r   (optional: `gemstack add realtime`)
 
-Planned optional modules: gemstack-realtime, -auth, -mailer, -storage
+Planned optional modules: gemstack-auth, -mailer, -storage
 (each depends on core, and on http only if it serves HTTP).
 ```
 
@@ -87,7 +88,7 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 1. **`gemstack-core` depends on nothing** (Ruby stdlib only) and never
    references another GemStack gem.
 2. Dependencies only point down the order
-   `core → cache → schema → http → db → jobs → contract → dev → cli → umbrella`. **Core never
+   `core → cache → schema → http → db → jobs → realtime → contract → dev → cli → umbrella`. **Core never
    depends on an optional module**, and nothing depends on the umbrella.
 3. **`gemstack-db` never depends on `gemstack-http`**; it gives database errors
    their HTTP meaning through core's `ErrorMapping`.
@@ -103,6 +104,7 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 | `gemstack-http` | Rack request/response, router, middleware, controllers (`accepts`/`input`/`returns`, serializer lookup), params, JSON codec, error rendering | core, schema, rack, json |
 | `gemstack-db` | Sequel/PostgreSQL connection + pool, `GemStack::Model`, error mapping, migrations, db tasks, test support | core, schema, sequel, pg |
 | `gemstack-jobs` | `GemStack::Job`, adapters (postgres/async/inline/test/sidekiq), worker, test helpers | core (+ gemstack-db for :postgres) |
+| `gemstack-realtime` | `GemStack.broadcast`, channels, SSE endpoint (hijack + nio4r), brokers, test helpers | core, schema, http, nio4r |
 | `gemstack-contract` | contract IR from routes/schemas/serializers → TypeScript types + clients, OpenAPI 3.1 | core, schema, http |
 | `gemstack-dev` | dev gateway, process supervisor, file watcher, background contract regeneration | core |
 | `gemstack-cli` | `gemstack` executable, generators (app, resource, model, migration, controller), `db:*`, `contract` | core, dev, thor |
@@ -366,26 +368,28 @@ Executor (shared by all adapters): performed | retry (backoff) | discarded | fai
 - `gemstack dev` runs a worker when the app uses the PostgreSQL queue, and
   restarts it when `app/` changes.
 
-## 10. Realtime **[planned — Phase 5]**
+## 10. Realtime **[built]** — see docs/realtime.md
 
-```ruby
-GemStack.broadcast("orders:#{order.id}", "order.updated", order)
-```
-```ts
-realtime.subscribe(`orders:${order.id}`, (event) => { /* ... */ })
+```text
+GemStack.broadcast(channel, event, data)
+   │  Serializer.render(data) → Message {id, channel, event, data}
+   ▼
+broker.publish ── :postgres NOTIFY (transactional) | :redis PUBLISH | :memory | :test
+   ▼  (every API process: one LISTEN / SUBSCRIBE thread)
+Hub.deliver ── channel → identity set of Connections, bounded replay history
+   ▼
+Connection.push (non-blocking write, buffered) ◀── Streamer: one nio4r loop per process
+                                                   (writable flushes, EOF detection, heartbeats)
+GET /api/realtime?channels=a,b ── Middleware: validate, authorize (config/channels.rb),
+                                  replay since Last-Event-ID or send gemstack.gap,
+                                  gemstack.denied for refused channels, Rack full hijack
 ```
 
-- Optional module; an app that does not enable it pays nothing (no middleware,
-  no threads, no client code).
-- Default transport: **Server-Sent Events** (one-way server → client covers
-  notifications, live updates, dashboards; works through HTTP proxies, automatic
-  reconnect, `Last-Event-ID` replay). **WebSocket** transport as an adapter for
-  bidirectional use cases (chat typing indicators, presence).
-- Fan-out between processes via a **broker adapter**: PostgreSQL
-  `LISTEN/NOTIFY` by default (already a dependency), Redis pub/sub optional.
-- Long-lived connections are served off Puma's request threads (Rack hijack +
-  a single event loop thread), so they never exhaust the request thread pool.
-- Channel authorisation hook (`authorize_channel "orders:*" { |user, id| ... }`).
+- Optional: added with `gemstack add realtime`. Without it there's no
+  middleware, no threads, no client code.
+- The browser client (`frontend/lib/gemstack/realtime.ts`) keeps one
+  EventSource per tab, multiplexes channels, and carries `last_event_id` across
+  channel-set changes.
 
 ## 11. Performance strategy
 

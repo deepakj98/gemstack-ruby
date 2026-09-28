@@ -99,6 +99,26 @@ module GemStack
         objects.map { |object| new(object, context).to_h }
       end
 
+      # Convention-based rendering, shared by controllers (`render`) and
+      # realtime (`GemStack.broadcast`): an object of class Product uses
+      # ProductSerializer, arrays and datasets of them too; plain JSON values
+      # and objects without a serializer pass through unchanged.
+      def render(value, context = {})
+        case value
+        when Hash, String, Numeric, Symbol, true, false, nil then value
+        when Array
+          serializer = value.first && self.for(value.first.class)
+          serializer ? serializer.many(value, context) : value
+        else
+          if value.respond_to?(:model) && value.respond_to?(:all) # a dataset / query
+            serializer = self.for(value.model)
+            return serializer ? serializer.many(value, context) : value.all
+          end
+          serializer = self.for(value.class)
+          serializer ? serializer.serialize(value, context) : value
+        end
+      end
+
       # Defaults for convention-based lookup: ProductSerializer for Product.
       def for(object_class)
         return nil unless object_class.name

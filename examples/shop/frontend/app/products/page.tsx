@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { NewProductNotice } from "@/components/products/NewProductNotice";
 import { ProductSearch } from "@/components/products/ProductSearch";
 import { ProductTable } from "@/components/products/ProductTable";
 import { useProducts } from "@/lib/queries/products";
@@ -17,6 +18,7 @@ export default function ProductsPage() {
         </Link>
       </header>
       {/* useSearchParams needs a Suspense boundary for static rendering. */}
+      <NewProductNotice />
       <Suspense>
         <ProductSearch />
         <h2>All products</h2>

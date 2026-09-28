@@ -26,8 +26,7 @@ gemstack generate resource Product name:string price:decimal description:text:op
 | Transactional tests with sample data from field declarations | `test/` |
 | OpenAPI 3.1 | `openapi.json` |
 | Background job enqueued in the same transaction as the product | `app/jobs/announce_product.rb`, `ProductsController#create` |
-
-Realtime notifications will be added to this example in Phase 5 (see ROADMAP.md).
+| Realtime: the job broadcasts, open products pages update live | `config/channels.rb`, `components/products/NewProductNotice.tsx` |
 
 ## Run it
 

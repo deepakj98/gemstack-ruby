@@ -36,6 +36,49 @@ bin/gemstack g resource AuditLog message:text --api-only            # no fronten
 bin/gemstack g job SendDigest mailers
 if bin/gemstack g job Digest > /dev/null 2>&1; then echo "expected 'Digest' to be refused"; exit 1; fi
 
+step "add realtime"
+bin/gemstack add realtime
+cat > config/channels.rb <<'RUBY'
+GemStack.channels do
+  channel "products"
+  channel "orders:*" do |id, request|
+    request.get_header("HTTP_AUTHORIZATION") == "Bearer #{id}"
+  end
+end
+RUBY
+cat > test/realtime_test.rb <<'RUBY'
+require_relative "test_helper"
+
+class RealtimeTest < GemStack::TestCase
+  def test_broadcast_uses_the_serializer
+    product = Product.create(GemStack::DB::Testing.sample_attributes(Product))
+    GemStack.broadcast("products", "product.created", product)
+
+    assert_broadcast "products", "product.created", data: ProductSerializer.serialize(product)
+  end
+
+  def test_channel_rules
+    request = Rack::Request.new(Rack::MockRequest.env_for("/", "HTTP_AUTHORIZATION" => "Bearer 7"))
+
+    assert GemStack.channels.authorized?("orders:7", request)
+    refute GemStack.channels.authorized?("orders:8", request)
+    refute GemStack.channels.authorized?("anything-else", request)
+  end
+end
+RUBY
+cat > frontend/components/LiveProducts.tsx <<'TSX'
+"use client";
+import { useState } from "react";
+import type { Product } from "@/lib/api/generated";
+import { useRealtime } from "@/lib/gemstack/realtime";
+
+export function LiveProducts() {
+  const [names, setNames] = useState<string[]>([]);
+  useRealtime<Product>("products", (event) => setNames((current) => [...current, event.data.name]));
+  return <ul>{names.map((name) => <li key={name}>{name}</li>)}</ul>;
+}
+TSX
+
 step "migrate + Ruby tests"
 bin/gemstack db:migrate
 bin/gemstack test

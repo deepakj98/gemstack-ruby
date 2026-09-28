@@ -1,0 +1,220 @@
+# frozen_string_literal: true
+
+require "securerandom"
+require "gemstack/core"
+require "gemstack/schema"
+require "gemstack/http"
+
+module GemStack
+  # Realtime updates to browsers (ARCHITECTURE §10, DECISIONS D-044).
+  #
+  #   GemStack.broadcast("orders:#{order.id}", "order.updated", order)   # anywhere: controllers, jobs, console
+  #
+  #   // browser
+  #   realtime.subscribe(`orders:${id}`, (event) => { ... })
+  #
+  # Transport: Server-Sent Events on `<api_path>/realtime`, one multiplexed
+  # stream per browser tab, served off the server's request threads. Fan-out
+  # between processes goes through a broker (PostgreSQL LISTEN/NOTIFY by
+  # default). Channels are deny-by-default: declare them in config/channels.rb.
+  module Realtime
+    class Config < Settings
+      setting :path, default: -> { "#{GemStack.config.http.api_path}/realtime" }
+      # :postgres (default with gemstack-db), :memory (single process),
+      # :redis, :test (default in tests), or a broker object.
+      setting :broker, default: lambda {
+        if GemStack.env.test? then :test
+        elsif defined?(GemStack::DB) then :postgres
+        else :memory
+        end
+      }
+      # Seconds between keep-alive comments (keeps proxies from closing idle streams).
+      setting :heartbeat, default: 15
+      # Recent events kept per process for Last-Event-ID replay after reconnects.
+      setting :replay_size, default: 1_000
+      setting :replay_ttl, default: 300
+      setting :max_channels, default: 50
+      # A client that falls this far behind (bytes buffered) is disconnected.
+      setting :max_buffer, default: 1024 * 1024
+      # Reconnect delay the browser is told to use (ms).
+      setting :retry_ms, default: 3_000
+      setting :redis_url, default: -> { ENV.fetch("REDIS_URL", "redis://localhost:6379/0") }
+      setting :redis_channel, default: -> { "gemstack:realtime:#{GemStack.config.name}" }
+    end
+
+    CHANNEL_NAME = /\A[A-Za-z0-9_\-.:]{1,200}\z/
+
+    class InvalidChannel < BadRequest; end
+    class PayloadTooLarge < Error; end
+
+    # One broadcast.
+    Message = Struct.new(:id, :channel, :event, :data) do
+      def to_h = { id: id, channel: channel, event: event, data: data }
+      def json = @json ||= HTTP::JSONCodec.default.dump(to_h)
+      def sse = "id: #{id}\ndata: #{json}\n\n"
+
+      def self.from_json(string)
+        hash = JSON.parse(string)
+        new(hash["id"], hash["channel"], hash["event"], hash["data"])
+      end
+    end
+
+    @mutex = Mutex.new
+
+    class << self
+      def config = GemStack.config.realtime
+
+      def broker
+        @broker || @mutex.synchronize { @broker ||= build_broker(config.broker) }
+      end
+
+      attr_writer :broker
+
+      def hub
+        @hub || @mutex.synchronize { @hub ||= Hub.new }
+      end
+
+      def channels
+        @channels ||= Channels.new
+      end
+
+      def build_broker(setting)
+        case setting
+        when :postgres, "postgres" then Brokers::Postgres.new
+        when :memory, "memory" then Brokers::Memory.new
+        when :redis, "redis" then Brokers::Redis.new
+        when :test, "test" then Brokers::Test.new
+        else
+          unless setting.respond_to?(:publish)
+            raise ConfigurationError,
+                  "a realtime broker must respond to #publish and #start"
+          end
+
+          setting
+        end
+      end
+
+      def broadcast(channel, event, data = nil, context: {})
+        channel = channel.to_s
+        raise InvalidChannel, "invalid channel name #{channel.inspect}" unless CHANNEL_NAME.match?(channel)
+
+        message = Message.new(next_id, channel, event.to_s, Serializer.render(data, context))
+        broker.publish(message)
+        GemStack.logger.debug("realtime.broadcast", channel: channel, event: message.event, id: message.id)
+        message.id
+      end
+
+      # Starts delivering broker messages to this process's connections (idempotent).
+      def listen!
+        return true if @listening
+
+        # Resolve these before locking: both lazily take the same mutex.
+        active_broker = broker
+        active_hub = hub
+        @mutex.synchronize do
+          @listening ||= begin
+            active_broker.start { |message| active_hub.deliver(message) }
+            true
+          end
+        end
+      end
+
+      def reset!
+        @broker&.stop if @broker.respond_to?(:stop)
+        @broker = nil
+        @hub&.shutdown
+        @hub = nil
+        @listening = nil
+      end
+
+      private
+
+      def next_id = "#{Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond)}-#{SecureRandom.hex(4)}"
+    end
+
+    # Channel authorization (config/channels.rb):
+    #
+    #   GemStack.channels do
+    #     channel "announcements"                       # anyone may subscribe
+    #     channel "orders:*" do |order_id, request|     # * = one segment, passed to the block
+    #       Order.find_by(id: order_id)&.visible_to?(current_user(request))
+    #     end
+    #   end
+    #
+    # Channels that match no rule are refused (403).
+    class Channels
+      Rule = Struct.new(:pattern, :regex, :block)
+
+      def initialize
+        @rules = []
+      end
+
+      def draw(&) = instance_exec(&)
+      def clear = @rules.clear
+      def rules = @rules.dup
+
+      def channel(pattern, &block)
+        pattern = pattern.to_s
+        unless pattern.split(":").all? { |part| part == "*" || CHANNEL_NAME.match?(part) }
+          raise ArgumentError, "invalid channel pattern #{pattern.inspect}"
+        end
+
+        regex = Regexp.new("\\A#{pattern.split(":").map do |part|
+          part == "*" ? "([^:]+)" : Regexp.escape(part)
+        end.join(":")}\\z")
+        @rules << Rule.new(pattern, regex, block)
+      end
+
+      def authorized?(name, request)
+        @rules.each do |rule|
+          match = rule.regex.match(name) or next
+          return true unless rule.block
+
+          return rule.block.call(*match.captures, request) ? true : false
+        end
+        false
+      end
+    end
+  end
+
+  class << self
+    def broadcast(...) = Realtime.broadcast(...)
+
+    # config/channels.rb: GemStack.channels { channel "announcements" }
+    def channels(&)
+      return Realtime.channels unless block_given?
+
+      Realtime.channels.draw(&)
+    end
+  end
+end
+
+require_relative "realtime/hub"
+require_relative "realtime/connection"
+require_relative "realtime/streamer"
+require_relative "realtime/middleware"
+require_relative "realtime/brokers/memory"
+require_relative "realtime/brokers/test"
+require_relative "realtime/brokers/postgres"
+require_relative "realtime/brokers/redis"
+
+GemStack::Config.namespace(:realtime, GemStack::Realtime::Config)
+
+GemStack::Plugins.register(:realtime) do |app|
+  next unless app.respond_to?(:root)
+
+  stack = app.config.http.middleware
+  unless stack.include?(GemStack::Realtime::Middleware)
+    stack.insert_before(GemStack::HTTP::Middleware::HealthCheck, GemStack::Realtime::Middleware)
+  end
+  channels_file = app.root.join("config/channels.rb")
+  load_channels = lambda do
+    GemStack::Realtime.channels.clear
+    load channels_file.to_s if channels_file.file?
+  end
+  load_channels.call
+  app.on_reload(&load_channels) if app.respond_to?(:on_reload)
+  app.on_shutdown { GemStack::Realtime.reset! } if app.respond_to?(:on_shutdown)
+  # The broker's listener holds one database connection for the process.
+  app.config.db.pool_size += 1 if app.config.realtime.broker.to_s == "postgres" && app.config.respond_to?(:db)
+end

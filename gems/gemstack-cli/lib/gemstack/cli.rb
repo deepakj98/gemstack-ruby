@@ -14,6 +14,7 @@ module GemStack
     require_relative "cli/resource_generator"
     require_relative "cli/migration_generator"
     require_relative "cli/job_generator"
+    require_relative "cli/add_generator"
     require_relative "cli/commands/db"
     require_relative "cli/commands/jobs"
 
@@ -168,6 +169,17 @@ module GemStack
       when nil then abort("Usage: gemstack generate GENERATOR NAME. Generators: #{GENERATORS}")
       else abort("Unknown generator #{generator.inspect}. Available: #{GENERATORS}")
       end
+    end
+
+    desc "add FEATURE", "Add an optional module to this app: realtime"
+    long_desc <<~DESC
+      gemstack add realtime
+        Adds gemstack-realtime, config/channels.rb, frontend/lib/gemstack/realtime.ts and test helpers.
+    DESC
+    method_option :skip_install, type: :boolean, default: false
+    def add(feature)
+      AddGenerator.new(feature, root: Project.root!, install: !options[:skip_install]).run
+      say("\nNext: declare channels in config/channels.rb, then GemStack.broadcast(...) — see docs/realtime.md")
     end
 
     desc "version", "Print the GemStack version"

@@ -271,3 +271,45 @@ class JobGeneratorTest < Minitest::Test
     assert_equal "20260101120002", GemStack::CLI::Generator.migration_timestamp(@root, time)
   end
 end
+
+class AddGeneratorTest < Minitest::Test
+  def setup
+    @root = Dir.mktmpdir
+    FileUtils.mkdir_p(%W[#{@root}/test #{@root}/frontend #{@root}/config])
+    File.write("#{@root}/test/test_helper.rb", %(require_relative "../config/app"\nrequire "gemstack/testing"\n))
+    @out = StringIO.new
+  end
+
+  def teardown = FileUtils.rm_rf(@root)
+
+  def add = GemStack::CLI::AddGenerator.new("realtime", root: @root, output: @out, install: false).run
+
+  def test_realtime_in_a_checkout_app
+    File.write("#{@root}/Gemfile", %(path "/x/gems" do\n  gem "gemstack"\n  gem "gemstack-jobs"\n  gem "gemstack-schema"\nend\ngem "puma"\n))
+    add
+
+    assert_includes File.read("#{@root}/Gemfile"),
+                    %(  gem "gemstack-jobs"\n  gem "gemstack-realtime"\n  gem "gemstack-schema"\nend) # sorted
+    assert File.exist?("#{@root}/config/channels.rb")
+    assert File.exist?("#{@root}/frontend/lib/gemstack/realtime.ts")
+    helper = File.read("#{@root}/test/test_helper.rb")
+
+    assert_includes helper, %(require "gemstack/testing"\nrequire "gemstack/realtime/testing")
+    assert_includes helper, "GemStack::TestCase.include GemStack::Realtime::Testing"
+    add # idempotent
+
+    assert_equal 1, File.read("#{@root}/Gemfile").scan("gemstack-realtime").size
+    assert_equal 1, File.read("#{@root}/test/test_helper.rb").scan("Realtime::Testing\n").size
+  end
+
+  def test_realtime_in_a_versioned_app
+    File.write("#{@root}/Gemfile", %(source "https://rubygems.org"\ngem "gemstack", "~> 0.1.0"\n))
+    add
+
+    assert_includes File.read("#{@root}/Gemfile"), %(gem "gemstack-realtime", "~> #{GemStack::VERSION}")
+  end
+
+  def test_unknown_feature
+    assert_raises(Thor::Error) { GemStack::CLI::AddGenerator.new("teleport", root: @root) }
+  end
+end

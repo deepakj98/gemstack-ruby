@@ -4,6 +4,7 @@ ENV["GEMSTACK_ENV"] = "test"
 
 require_relative "../config/app"
 require "gemstack/testing"
+require "gemstack/realtime/testing"
 require "gemstack/jobs/testing"
 require "gemstack/db/testing"
 require "minitest/autorun"
@@ -17,3 +18,4 @@ GemStack::TestCase.include GemStack::DB::Testing::Transactions
 
 # Jobs are recorded, not run: assert_enqueued / perform_enqueued_jobs.
 GemStack::TestCase.include GemStack::Jobs::Testing
+GemStack::TestCase.include GemStack::Realtime::Testing

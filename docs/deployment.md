@@ -86,6 +86,8 @@ and build the frontend with `NEXT_PUBLIC_GEMSTACK_API_URL=https://api.example.co
 - Add `gem "brotli"` for Brotli compression; with a compressing CDN/proxy in front, either is fine
   (GemStack never re-compresses encoded responses).
 - Several processes/hosts? Use `config.cache.store = :redis` (`gem "redis-client"`, `REDIS_URL`).
+- Realtime (SSE) works through Next.js rewrites and reverse proxies; with nginx set
+  `proxy_read_timeout` above 15 s (GemStack sends `X-Accel-Buffering: no`). See docs/realtime.md.
 - Health check: `GET /api/health` → `200 {"status":"ok"}`.
 - Collect stdout: each line is a JSON object with `level`, `msg`, `id`.
 

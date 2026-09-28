@@ -116,12 +116,26 @@ documented before the next begins.
 - `script/e2e`: generated app with every field type + edge cases → 65 generated tests, `tsc`, `next build` pass.
 - Not yet: recurring (cron) jobs, unique jobs, batches, a web dashboard.
 
-## Phase 5 — Realtime
+## Phase 5 — Realtime  *(complete)*
 
-- [ ] `GemStack.broadcast` + channel authorisation
-- [ ] SSE transport (default) and WebSocket transport adapter
-- [ ] Broker adapters: Postgres LISTEN/NOTIFY (default), Redis
-- [ ] TypeScript `realtime.subscribe` client with reconnect / replay
+- [x] `GemStack.broadcast` (serializer-aware) + deny-by-default channel authorization (`config/channels.rb`)
+- [x] SSE transport served off request threads (Rack hijack + nio4r event loop), heartbeats, slow-client limits
+- [x] Brokers: PostgreSQL LISTEN/NOTIFY (default, transactional), Redis, memory, test
+- [x] Last-Event-ID replay, `gemstack.gap` and `gemstack.denied` signals
+- [x] TypeScript `realtime.subscribe` / `useRealtime` with one multiplexed connection per tab
+- [x] `gemstack add realtime`; test helpers `assert_broadcast` / `refute_broadcast`
+- [x] Example app: products announced live from a background job
+- [ ] WebSocket transport — deferred with reasons (D-044)
+- [ ] Presence (who's online), typed channel/event contracts in TypeScript
+
+### Phase 5 verification
+
+- 378 tests across eleven gems, 0 skipped with PostgreSQL + Redis; RuboCop clean; `script/e2e` passes (incl. realtime).
+- Realtime suite against a real Puma server with raw SSE clients, real PostgreSQL and real Redis.
+- Live: POST → job worker → broadcast → NOTIFY → API process → SSE through the dev gateway in 41 ms.
+- The compiled TypeScript client run in Node against a live server: one multiplexed connection,
+  routing, `gemstack.denied`, reconnect with `last_event_id`, idle after unsubscribing.
+- SSE through Next.js production rewrites, with a broadcast from a separate console process.
 
 ## Phase 6 — Optional modules
 
