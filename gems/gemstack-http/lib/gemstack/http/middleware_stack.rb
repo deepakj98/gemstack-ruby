@@ -24,11 +24,13 @@ module GemStack
         new.tap do |stack|
           stack.use Middleware::RequestId, config
           stack.use Middleware::RequestLogger
+          stack.use Middleware::Compression, config
           stack.use Middleware::ErrorHandler, config
           stack.use Middleware::SecurityHeaders, config
           stack.use Middleware::Cors, config
           stack.use Middleware::BodyLimit, config
           stack.use Middleware::HealthCheck, config
+          stack.use Middleware::ETags, config
         end
       end
 

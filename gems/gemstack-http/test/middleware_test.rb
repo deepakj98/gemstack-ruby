@@ -17,7 +17,8 @@ class MiddlewareStackTest < Minitest::Test
   def test_default_stack_order
     names = GemStack::HTTP::MiddlewareStack.default(build_config).names.map { |n| n.split("::").last }
 
-    assert_equal %w[RequestId RequestLogger ErrorHandler SecurityHeaders Cors BodyLimit HealthCheck], names
+    assert_equal %w[RequestId RequestLogger Compression ErrorHandler SecurityHeaders Cors BodyLimit HealthCheck ETags],
+                 names
   end
 
   def test_editing_operations
@@ -40,7 +41,7 @@ class MiddlewareStackTest < Minitest::Test
     stack.insert_before(M::ErrorHandler, Tag, "x")
 
     refute stack.include?(M::SecurityHeaders)
-    assert_equal(3, stack.to_a.index { |e| e.klass == M::ErrorHandler })
+    assert_equal(4, stack.to_a.index { |e| e.klass == M::ErrorHandler })
     assert_raises(ArgumentError) { stack.delete(M::SecurityHeaders) }
   end
 

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "gemstack/core"
+require "gemstack/cache"
 require "gemstack/http"
 require "gemstack/dev"
 require_relative "gemstack/interlock"
@@ -16,6 +17,15 @@ module GemStack
     setting :eager_load, default: -> { !GemStack.env.local? }
     # Extra directories to autoload, relative to the root (e.g. ["lib"]).
     setting :autoload_paths, default: []
+    # Ruby JIT enabled at boot: :yjit (production default, measured fastest),
+    # :zjit (Ruby 4's newer JIT, opt-in), or nil. GEMSTACK_JIT=yjit|zjit|off overrides.
+    setting :jit, default: lambda {
+      case ENV.fetch("GEMSTACK_JIT", nil)
+      when "off", "none", "" then nil
+      when String then ENV["GEMSTACK_JIT"].to_sym
+      else GemStack.env.production? ? :yjit : nil
+      end
+    }
   end
 
   # Short names for application code:

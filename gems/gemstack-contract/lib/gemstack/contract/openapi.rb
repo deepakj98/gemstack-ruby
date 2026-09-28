@@ -31,6 +31,10 @@ module GemStack
         }
       end
 
+      PAGE_PARAMETERS = %w[page per_page].map do |name|
+        { name: name, in: "query", required: false, schema: { type: "integer", minimum: 1 } }
+      end.freeze
+
       private
 
       def paths
@@ -51,6 +55,7 @@ module GemStack
           responses: responses(endpoint)
         }
         op[:parameters].concat(query_parameters(endpoint[:query])) if endpoint[:query]
+        op[:parameters].concat(PAGE_PARAMETERS) if endpoint[:paginated]
         if endpoint[:body]
           op[:requestBody] =
             { required: true, content: { "application/json" => { schema: schema_for(endpoint[:body]) } } }
@@ -95,9 +100,21 @@ module GemStack
         if ref[:scalar] then Types.fetch(ref[:scalar]).openapi.dup
         elsif ref[:ref] then { "$ref": "#/components/schemas/#{ref[:ref]}" }
         elsif ref[:array] then { type: "array", items: schema_for(ref[:array]) }
+        elsif ref[:page] then page_schema(ref[:page])
         elsif ref[:object] then object_schema(ref[:object])
         else {}
         end
+      end
+
+      def page_schema(item)
+        meta = %w[page per_page total total_pages].to_h { |key| [key, { type: "integer" }] }
+        {
+          type: "object", required: %w[data meta],
+          properties: {
+            data: { type: "array", items: schema_for(item) },
+            meta: { type: "object", required: meta.keys, properties: meta }
+          }
+        }
       end
 
       def openapi_path(path) = "#{@contract[:api_path]}#{path.gsub(/[:*](\w+)/, '{\1}')}"

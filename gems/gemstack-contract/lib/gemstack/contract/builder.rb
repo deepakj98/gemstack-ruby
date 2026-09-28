@@ -58,10 +58,11 @@ module GemStack
         schema = controller.input_schemas[action]
         input = schema && schema_ref(schema, "#{resource_name(controller)}#{Inflector.camelize(action)}Input")
         get = %w[GET HEAD].include?(route.verb)
+        response = response_ref(controller, action)
         {
           name: METHOD_NAMES.fetch(action) { lower_camel(action) }, action: action, verb: route.verb, path: path,
           params: route.param_names.dup, body: get ? nil : input, query: get ? input : nil,
-          response: response_ref(controller, action)
+          response: response, paginated: response.is_a?(Hash) && response.key?(:page)
         }
       end
 
@@ -105,6 +106,7 @@ module GemStack
 
       def type_ref(type)
         case type
+        when HTTP::Page::Type then { page: type_ref(type.item) }
         when Array then { array: type_ref(type.first) }
         when Class
           return serializer_ref(type) if type <= Serializer

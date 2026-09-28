@@ -23,11 +23,12 @@ gemstack dev          # → http://localhost:3000
          Next.js           /api/*  → Ruby (Rack + Puma)
 ```
 
-> **Status: Phases 1–2 complete — see [ROADMAP.md](ROADMAP.md).**
+> **Status: Phases 1–3 complete — see [ROADMAP.md](ROADMAP.md).**
 > Built: HTTP layer, router, middleware, controllers, single-origin dev server,
 > Next.js + TypeScript template, PostgreSQL models (Sequel), migrations,
 > validation, serializers, TypeScript/OpenAPI contract, `generate resource`.
-> Next: compression, caching and benchmarks (Phase 3), jobs (4), realtime (5).
+> Phase 3: compression, ETags/304, pagination, `GemStack.cache`, YJIT by default, benchmarks.
+> Next: background jobs (Phase 4), realtime (Phase 5).
 > Docs for planned modules are marked as such.
 
 ## Why
@@ -132,6 +133,7 @@ See [`examples/shop`](examples/shop) for a complete example application.
 ```text
 gems/
   gemstack-core/     config, env, logger, errors, error mapping, inflector, plugins — zero dependencies
+  gemstack-cache/    GemStack.cache: memory, null and Redis stores
   gemstack-schema/   shared types, request schemas, serializers
   gemstack-http/     router, middleware, controllers, params, JSON (Rack 3)
   gemstack-db/       PostgreSQL via Sequel: models, migrations, db tasks (optional)
@@ -170,10 +172,10 @@ bundle exec rake bench
 [Resource generation](docs/resource-generation.md)
 
 [Models & database](docs/models.md) · [Validation](docs/validation.md) ·
-[Serialization](docs/serialization.md)
+[Serialization](docs/serialization.md) · [Caching](docs/caching.md)
 
 Planned modules: [background jobs](docs/background-jobs.md) ·
-[realtime](docs/realtime.md) · [caching](docs/caching.md) ·
+[realtime](docs/realtime.md) ·
 [authentication](docs/authentication.md) · [authorization](docs/authorization.md) ·
 [storage](docs/storage.md)
 

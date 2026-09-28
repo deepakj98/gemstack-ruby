@@ -12,7 +12,8 @@ class ProductsControllerTest < GemStack::TestCase
     get_json "/api/products"
 
     assert_status 200
-    assert_equal 1, json_body.size
+    assert_equal 1, json_body["data"].size
+    assert_equal({ "page" => 1, "per_page" => 25, "total" => 1, "total_pages" => 1 }, json_body["meta"])
   end
 
   def test_show
@@ -72,5 +73,19 @@ class ProductsControllerTest < GemStack::TestCase
 
     assert_error 422, "validation_failed"
     assert_equal ["is too short (minimum 2 characters)"], json_body["errors"]["q"]
+  end
+
+  def test_show_is_cacheable_with_etags
+    product = create_product
+    get_json "/api/products/#{product.id}"
+    etag = last_response.headers["etag"]
+
+    get_json "/api/products/#{product.id}", {}, { "HTTP_IF_NONE_MATCH" => etag }
+
+    assert_status 304
+    product.update(name: "Renamed")
+    get_json "/api/products/#{product.id}", {}, { "HTTP_IF_NONE_MATCH" => etag }
+
+    assert_status 200
   end
 end

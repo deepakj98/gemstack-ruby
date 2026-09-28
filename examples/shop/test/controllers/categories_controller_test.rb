@@ -12,7 +12,8 @@ class CategoriesControllerTest < GemStack::TestCase
     get_json "/api/categories"
 
     assert_status 200
-    assert_equal 1, json_body.size
+    assert_equal 1, json_body["data"].size
+    assert_equal({ "page" => 1, "per_page" => 25, "total" => 1, "total_pages" => 1 }, json_body["meta"])
   end
 
   def test_show

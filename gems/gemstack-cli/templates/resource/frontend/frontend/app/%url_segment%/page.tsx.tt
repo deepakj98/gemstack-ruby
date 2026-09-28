@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { <%= class_name %>Table } from "@/components/<%= spec.url_segment %>/<%= class_name %>Table";
 import { use<%= spec.plural_class %> } from "@/lib/queries/<%= spec.url_segment %>";
 
 export default function <%= spec.plural_class %>Page() {
-  const <%= spec.plural %> = use<%= spec.plural_class %>();
-
   return (
     <main className="page">
       <header className="page-header">
@@ -17,9 +17,35 @@ export default function <%= spec.plural_class %>Page() {
         </Link>
 <% end -%>
       </header>
-      {<%= spec.plural %>.isPending && <p className="muted">Loading…</p>}
-      {<%= spec.plural %>.isError && <p className="form-error">Could not load <%= spec.human_plural.downcase %>: {<%= spec.plural %>.error.message}</p>}
-      {<%= spec.plural %>.data && <<%= class_name %>Table <%= spec.plural %>={<%= spec.plural %>.data} />}
+      {/* useSearchParams needs a Suspense boundary for static rendering. */}
+      <Suspense>
+        <<%= spec.plural_class %>List />
+      </Suspense>
     </main>
+  );
+}
+
+// The current page lives in the URL (?page=2), so it survives reloads and can be shared.
+function <%= spec.plural_class %>List() {
+  const page = Math.max(1, Number(useSearchParams().get("page")) || 1);
+  const <%= spec.plural %> = use<%= spec.plural_class %>(page);
+
+  if (<%= spec.plural %>.isPending) return <p className="muted">Loading…</p>;
+  if (<%= spec.plural %>.isError) return <p className="form-error">Could not load <%= spec.human_plural.downcase %>: {<%= spec.plural %>.error.message}</p>;
+
+  const { data, meta } = <%= spec.plural %>.data;
+  return (
+    <>
+      <<%= class_name %>Table <%= spec.plural %>={data} />
+      {meta.total_pages > 1 && (
+        <nav className="actions" aria-label="Pagination">
+          {page > 1 && <Link href={`?page=${page - 1}`}>← Previous</Link>}
+          <span className="muted">
+            Page {meta.page} of {meta.total_pages}
+          </span>
+          {page < meta.total_pages && <Link href={`?page=${page + 1}`}>Next →</Link>}
+        </nav>
+      )}
+    </>
   );
 }

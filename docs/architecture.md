@@ -9,6 +9,7 @@ short version for application developers.
 | Gem | You use it for |
 |---|---|
 | `gemstack-core` | `GemStack.configure`, `GemStack.env`, `GemStack.logger`, errors (`GemStack::NotFound`, ...) |
+| `gemstack-cache` | `GemStack.cache` (memory / null / Redis stores) |
 | `gemstack-schema` | `GemStack::Types`, `GemStack::Schema`, `GemStack::Serializer` |
 | `gemstack-http` | routes, controllers (`accepts`, `input`, `render`), params, middleware, JSON |
 | `gemstack-db` *(optional)* | `GemStack::Model`, migrations, `GemStack.db`, `GemStack.transaction` |
@@ -24,8 +25,8 @@ into core by registering configuration namespaces and boot hooks
 ## A request
 
 ```text
-Puma → RequestId → RequestLogger → ErrorHandler → [Reloader in dev] → SecurityHeaders
-     → Cors → BodyLimit → HealthCheck → Router → YourController#action → JSON
+Puma → RequestId → RequestLogger → Compression → ErrorHandler → [Reloader in dev]
+     → SecurityHeaders → Cors → BodyLimit → HealthCheck → ETags → Router → YourController#action → JSON
 ```
 
 Everything is plain Rack: `GemStack.application` is a Rack app, and any Rack

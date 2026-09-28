@@ -1,7 +1,7 @@
 "use client";
 
 // TanStack Query hooks for categories, built on the generated API client.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { categories } from "@/lib/api/generated";
 import type { Category, CategoryInput, CategoryUpdateInput } from "@/lib/api/generated";
 
@@ -10,8 +10,12 @@ export const categoryKeys = {
   detail: (id: string | number) => ["categories", String(id)] as const,
 };
 
-export function useCategories() {
-  return useQuery({ queryKey: categoryKeys.all, queryFn: () => categories.list() });
+export function useCategories(page = 1) {
+  return useQuery({
+    queryKey: [...categoryKeys.all, "page", page],
+    queryFn: () => categories.list({ page }),
+    placeholderData: keepPreviousData, // keep the current page visible while the next one loads
+  });
 }
 
 export function useCategory(id: string | number) {

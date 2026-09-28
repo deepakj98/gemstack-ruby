@@ -22,6 +22,7 @@ module GemStack
 
       def endpoint(env)
         env[JSON_CODEC] = @codec
+        env[CONFIG] = @config
         @router.call(env)
       end
     end

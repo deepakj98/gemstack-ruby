@@ -1,7 +1,7 @@
 "use client";
 
 // TanStack Query hooks for products, built on the generated API client.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { products } from "@/lib/api/generated";
 import type { Product, ProductInput, ProductUpdateInput } from "@/lib/api/generated";
 
@@ -10,8 +10,12 @@ export const productKeys = {
   detail: (id: string | number) => ["products", String(id)] as const,
 };
 
-export function useProducts() {
-  return useQuery({ queryKey: productKeys.all, queryFn: () => products.list() });
+export function useProducts(page = 1) {
+  return useQuery({
+    queryKey: [...productKeys.all, "page", page],
+    queryFn: () => products.list({ page }),
+    placeholderData: keepPreviousData, // keep the current page visible while the next one loads
+  });
 }
 
 export function useProduct(id: string | number) {

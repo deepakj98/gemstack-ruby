@@ -82,6 +82,14 @@ module GemStack
         end.freeze
       end
 
+      # [[name, block_or_nil, dumper_or_nil], ...] — types resolved to
+      # dumpers once, so serializing an object does no type lookups.
+      def compiled
+        @compiled ||= resolved_attributes.map do |attr|
+          [attr[:name], attributes_list[attr[:name]].block, dumper_for(attr[:type])]
+        end.freeze
+      end
+
       def serialize(object, context = {})
         object.nil? ? nil : new(object, context).to_h
       end
@@ -103,6 +111,28 @@ module GemStack
 
       private
 
+      # A lambda (value, context) -> JSON value, or nil when values pass through.
+      def dumper_for(type)
+        case type
+        when Array
+          item = dumper_for(type.first)
+          return nil unless item
+
+          ->(values, ctx) { values.map { |v| v.nil? ? nil : item.call(v, ctx) } }
+        when Symbol then scalar_dumper(Types.fetch(type))
+        else ->(value, ctx) { type.serialize(value, ctx) } # nested serializer
+        end
+      end
+
+      def scalar_dumper(type)
+        if %i[string text].include?(type.name)
+          ->(value, _) { value.is_a?(String) ? value : type.coerce(value) }
+        elsif type.dumper
+          dump = type.dumper
+          ->(value, _) { dump.call(value) }
+        end
+      end
+
       # Explicit types are non-null unless declared nullable or the model's
       # field allows null; inferred types follow the model's field.
       def infer(attr)
@@ -121,33 +151,16 @@ module GemStack
       @context = context
     end
 
+    # Hot path: iterates the plan compiled once per serializer class
+    # (docs/performance.md — this loop dominates JSON response time).
     def to_h
-      self.class.resolved_attributes.each_with_object({}) do |attr, hash|
-        definition = self.class.attributes_list[attr[:name]]
-        value = definition.block ? instance_exec(object, &definition.block) : object.public_send(attr[:name])
-        hash[attr[:name]] = dump(attr[:type], value)
+      hash = {}
+      self.class.compiled.each do |name, block, dumper|
+        value = block ? instance_exec(object, &block) : object.public_send(name)
+        hash[name] = value.nil? || dumper.nil? ? value : dumper.call(value, context)
       end
+      hash
     end
     alias as_json to_h
-
-    private
-
-    def dump(type, value)
-      return nil if value.nil?
-
-      case type
-      when Symbol then dump_scalar(Types.fetch(type), value)
-      when Array
-        item = type.first
-        value.map { |v| dump(item, v) }
-      else type.serialize(value, context) # nested serializer
-      end
-    end
-
-    # Coerce-then-dump for string types so symbols etc. become strings.
-    def dump_scalar(type, value)
-      value = type.coerce(value) if %i[string text].include?(type.name) && !value.is_a?(String)
-      type.dump(value)
-    end
   end
 end

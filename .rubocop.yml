@@ -48,8 +48,9 @@ Naming/VariableNumber:
 Style/OneClassPerFile:
   Exclude:
     - "**/test/**/*"
+    - "benchmarks/**/*"
 Naming/MethodParameterName:
-  AllowedNames: [ts, id, io, to, as, at, on, of]
+  AllowedNames: [ts, id, io, to, as, at, on, of, by]
 # Tests favour explicit, readable assertions over short methods and lines.
 Metrics/AbcSize:
   Max: 35
@@ -63,3 +64,6 @@ Layout/LineLength:
   Max: 120
   Exclude:
     - "**/test/**/*"
+# GemStack.cache.fetch takes a block, not a default value — "fetch(k, v)" would break it.
+Style/RedundantFetchBlock:
+  Enabled: false

@@ -200,3 +200,27 @@ class InterlockTest < Minitest::Test
     assert_equal %i[writing reading], [order.pop, order.pop]
   end
 end
+
+class JITConfigTest < Minitest::Test
+  def config(env = "production", var = nil)
+    GemStack.env = env
+    ENV["GEMSTACK_JIT"] = var if var
+    GemStack::Config.new.jit
+  ensure
+    ENV.delete("GEMSTACK_JIT")
+    GemStack.env = "test"
+  end
+
+  def test_defaults_and_override
+    assert_equal :yjit, config("production")
+    assert_nil config("development")
+    assert_equal :zjit, config("production", "zjit")
+    assert_nil config("production", "off")
+  end
+
+  def test_unknown_jit_is_a_configuration_error
+    app = GemStack::Application.new(config: GemStack::Config.new.tap { |c| c.jit = :turbo })
+
+    assert_raises(GemStack::ConfigurationError) { app.send(:enable_jit) }
+  end
+end

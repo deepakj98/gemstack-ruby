@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class ProductsController < ApplicationController
+  returns :index, Page[ProductSerializer]
   accepts :create, with: Product.input_schema
   accepts :update, with: Product.input_schema, partial: true
 
@@ -15,14 +16,16 @@ class ProductsController < ApplicationController
     render Product.where(Sequel.ilike(:name, pattern)).order(:name).limit(20)
   end
 
-  # GET /api/products
+  # GET /api/products?page=1&per_page=25
   def index
-    render Product.order(:id)
+    render paginate(Product.order(:id))
   end
 
   # GET /api/products/:id
   def show
-    render Product.find(params[:id])
+    product = Product.find(params[:id])
+    # 304 Not Modified (no rendering) when the client already has this version.
+    render product if stale?(etag: product, last_modified: product.updated_at)
   end
 
   # POST /api/products

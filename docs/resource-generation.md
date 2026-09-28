@@ -12,14 +12,14 @@ produces a complete vertical slice:
 db/migrations/<ts>_create_products.rb     table, NOT NULL/unique constraints, FK + index
 app/models/product.rb                     field declarations, uniqueness, belongs_to
 app/serializers/product_serializer.rb     what the API returns
-app/controllers/products_controller.rb    index show create update destroy, `accepts` schemas
+app/controllers/products_controller.rb    index (paginated) show create update destroy, `accepts` schemas
 config/routes.rb                          resources :products
 test/models/product_test.rb               validity, required fields
 test/controllers/products_controller_test.rb   every action, 404, 422
 frontend/lib/api/generated/*              types + typed client (via `gemstack contract`)
 frontend/lib/queries/products.ts          TanStack Query hooks (useProducts, useCreateProduct, …)
 frontend/components/products/             ProductForm, ProductTable, ProductCard
-frontend/app/products/                    list, new, [id], [id]/edit pages
+frontend/app/products/                    list (with ?page= pager), new, [id], [id]/edit pages
 ```
 
 Run without fields to be asked interactively (fields, full CRUD?, Next.js

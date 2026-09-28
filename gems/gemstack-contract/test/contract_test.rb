@@ -39,6 +39,15 @@ class CtWidgetsController < GemStack::HTTP::Controller
   def stats; end
 end
 
+class CtGadgetsController < GemStack::HTTP::Controller
+  returns :index, Page[CtPartSerializer]
+  accepts(:search) { optional :q, :string }
+  returns :search, Page[CtPartSerializer]
+
+  def index; end
+  def search; end
+end
+
 class ContractTest < Minitest::Test
   FakeApp = Struct.new(:routes, :config) do
     def eager_load! = nil
@@ -55,6 +64,9 @@ class ContractTest < Minitest::Test
       end
       get "/ping", to: ->(_) { [200, {}, []] }
       get "/ghosts", to: "ghosts#index"
+      resources :ct_gadgets, only: :index do
+        collection { get "/search", action: :search }
+      end
     end
     config = GemStack::Config.new
     FakeApp.new(router.routes, config)
@@ -62,10 +74,32 @@ class ContractTest < Minitest::Test
 
   def contract = @contract ||= GemStack::Contract.build(app)
 
-  def endpoints = contract[:resources].first[:endpoints].to_h { |e| [e[:name], e] }
+  def endpoints(name = "ct_widgets")
+    contract[:resources].find { |r| r[:name] == name }[:endpoints].to_h { |e| [e[:name], e] }
+  end
+
+  def test_paginated_endpoints
+    e = endpoints("ct_gadgets")
+
+    assert e["list"][:paginated]
+    assert_equal({ page: { ref: "CtPart" } }, e["list"][:response])
+    ts = GemStack::Contract::TypeScript.new(contract).files
+
+    assert_includes ts["types.ts"], "export type Page<T> = {"
+    assert_includes ts["ct_gadgets.ts"],
+                    "list: (query?: PageQuery, options?: RequestOptions) => " \
+                    "api.get<Page<CtPart>>(\"/ct-gadgets\", { ...options, query }),"
+    assert_includes ts["ct_gadgets.ts"], "search: (query: CtGadgetSearchInput & PageQuery, options?: RequestOptions)"
+    assert_includes ts["ct_gadgets.ts"], "import type { CtGadgetSearchInput, CtPart, Page, PageQuery } from"
+    doc = GemStack::Contract::OpenAPI.new(contract).document
+    list = doc[:paths]["/api/ct-gadgets"]["get"]
+
+    assert_equal(%w[page per_page], list[:parameters].map { |p| p[:name] })
+    assert_equal %i[data meta], list[:responses]["200"][:content]["application/json"][:schema][:properties].keys
+  end
 
   def test_resources_and_conventional_endpoints
-    assert_equal(["ct_widgets"], contract[:resources].map { |r| r[:name] })
+    assert_equal(%w[ct_gadgets ct_widgets], contract[:resources].map { |r| r[:name] })
     e = endpoints
 
     assert_equal %w[create delete get list publish search stats update], e.keys.sort
@@ -169,7 +203,7 @@ class ContractTest < Minitest::Test
     Dir.mktmpdir do |root|
       first = GemStack::Contract.write(contract, root: root)
 
-      assert_equal 4, first[:written].size
+      assert_equal 5, first[:written].size # types, index, 2 resources, openapi
       stale = File.join(root, "frontend/lib/api/generated/old_resource.ts")
       File.write(stale, "// #{GemStack::Contract::HEADER}\n")
       mine = File.join(root, "frontend/lib/api/generated/handwritten.ts")

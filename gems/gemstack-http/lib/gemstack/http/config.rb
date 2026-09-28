@@ -52,6 +52,29 @@ module GemStack
         setting :max_age, default: 600
       end
 
+      # Response compression (Middleware::Compression).
+      namespace :compression do
+        setting :enabled, default: true
+        # Bodies smaller than this are sent as they are (compression overhead
+        # outweighs the savings on tiny responses).
+        setting :min_size, default: 1024
+        # Server preference; "br" is used only when the brotli gem is installed.
+        setting :encodings, default: %w[br gzip]
+        # Measured on varied JSON (docs/performance.md): gzip 4 costs half the
+        # CPU of gzip 6 for ~2% larger output; Brotli 4 is smaller than gzip 4 and cheaper.
+        setting :brotli_quality, default: 4
+        setting :gzip_level, default: 4
+      end
+
+      # ETags for GET/HEAD responses and 304 Not Modified (Rack::ETag + Rack::ConditionalGet).
+      setting :etags, default: true
+
+      # Defaults for `paginate` in controllers.
+      namespace :pagination do
+        setting :per_page, default: 25
+        setting :max_per_page, default: 100
+      end
+
       # The middleware stack. Edit it with use / insert_before / insert_after /
       # swap / delete. Middleware receive this config and read it when the
       # application is built, so settings may be changed in any order.

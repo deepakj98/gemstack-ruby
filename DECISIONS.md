@@ -398,6 +398,104 @@ server.
   block; this is valid on Ruby 4 and was verified by running the benchmark.
 - `require "pathname"` is redundant on Ruby 4 (Pathname is core).
 
+## D-033 Compression middleware (confirms P-105)
+
+**Decision.** `Middleware::Compression`, placed after the request logger and
+before the error handler, so error responses are compressed too. It
+negotiates `Accept-Encoding` with q-values and prefers Brotli when the
+optional `brotli` gem is installed, else gzip. It compresses JSON, text, JS,
+XML and SVG bodies of at least 1 KB whose size is known. It never touches
+HEAD, 1xx/204/304 responses, already-encoded responses, `no-transform`,
+Server-Sent Events or streamed bodies. It always sends
+`Vary: Accept-Encoding` for compressible types and weakens strong ETags.
+
+**Why our own.** `Rack::Deflater` only does gzip and has no size threshold.
+The middleware is ~120 lines and fully tested.
+
+**Levels, from measurements** (docs/performance.md). On a varied 26 KB JSON
+body, gzip 6 costs 481 µs for 27.2%, gzip 4 costs 246 µs for 29.1%, and
+Brotli 4 costs 210 µs for 28.9%. **Defaults: gzip 4, Brotli 4** — half the
+CPU of gzip 6 for about 2 points of size. Brotli 11 took ~15 ms per response
+and is unsuitable for dynamic content.
+
+**Security.** BREACH-style attacks need a secret *and* attacker-controlled
+input reflected in the same compressed response. Apps returning such bodies
+should disable compression for those responses
+(`headers["cache-control"] = "no-transform"`) or globally
+(`config.http.compression.enabled = false`). Documented in docs/performance.md.
+
+## D-034 Pagination envelope: `{ data, meta }`, typed as `Page<T>`
+
+**Decision.** `paginate(dataset)` reads `page` / `per_page` (validated: 422 on
+invalid values; `per_page` clamped to `max_per_page`, default 100) and returns
+a `Page` that renders as `{"data": [...], "meta": {"page", "per_page", "total", "total_pages"}}`.
+`returns :index, Page[ProductSerializer]` makes the contract emit
+`list(query?: PageQuery): Promise<Page<Product>>`. Generated `index` actions
+paginate by default, and generated pages keep `?page=` in the URL.
+
+**Reasoning.** Unbounded `index` responses are a production hazard. An
+envelope is explicit and typed, whereas pagination in headers is invisible to
+the typed client. Offset pagination suits the conventional admin/list case;
+keyset (cursor) pagination for very large tables can be added later behind
+the same `Page` shape.
+
+## D-035 Caching: `gemstack-cache` with memory, null and Redis stores
+
+**Decision.** A small gem (depends on core only, included by the umbrella)
+providing `GemStack.cache` with `fetch/read/write/delete/exist?/increment/decrement/clear`.
+Stores:
+- `:memory` (default): a per-process LRU with TTL. Values are marshalled, so
+  cached objects are never shared or mutated.
+- `:null` (default in test).
+- `:redis` via `redis-client` (optional gem): a pooled connection, atomic
+  `INCRBY`, and a `clear` limited to the app's namespace (never `FLUSHDB`).
+- Any object implementing the interface.
+
+**Reasoning.** "Don't force Redis": a single-process app gets a working cache
+with no infrastructure, and multi-process deployments switch one setting.
+`redis-client` is the maintained low-level client used by Sidekiq 7 and
+redis-rb 5. Stampede protection (`race_condition_ttl`) is deliberately left
+for later.
+
+## D-036 ETags and 304s from Rack's middleware
+
+**Decision.** `Middleware::ETags` wraps `Rack::ConditionalGet` + `Rack::ETag`
+(reuse, not reinvention), and `config.http.etags` turns both off. Controllers
+get `stale?(etag:, last_modified:)` / `fresh_when`, which skip rendering
+entirely for fresh requests, plus `cache_control`. GemStack models provide
+`cache_key` (`"product/42-<updated_at>"`) for record ETags.
+
+**Cost.** About 2 µs per request (measured); the benefit is bandwidth and
+client-side revalidation.
+
+## D-037 JSON: stdlib stays the default (confirms D-006 with evidence)
+
+The Oj adapter was reworked to try Oj's C strict mode first (it accepts
+symbol keys) and fall back to normalisation only for non-native values. On
+serializer output, stdlib `JSON::Coder` (json 3.0) is still faster: 4.3 µs vs
+7.0 µs for 20 records, and 19.8 vs 34.2 µs for 100, with 1 allocation vs 42–202.
+Oj remains available as `config.http.json = :oj`.
+
+## D-038 Serializers compile an execution plan
+
+**Finding.** Serialization dominated JSON response time: 90 µs for 20
+records, versus ~14 µs for the whole middleware + routing + controller path.
+**Change.** Each serializer class compiles `[name, block, dumper]` once (types
+resolved to lambdas, no per-value lookups), and decimals no longer
+round-trip through strings. **Result.** 20 records: 90 → 30 µs (interpreter),
+52 → 18 µs (YJIT), with half the allocations.
+
+## D-039 YJIT on by default in production
+
+**Decision.** `config.jit` defaults to `:yjit` in production (`nil` elsewhere,
+`:zjit` opt-in, `GEMSTACK_JIT=yjit|zjit|off`). It is enabled at boot unless a
+JIT is already running.
+
+**Evidence** (Puma, 5 threads, `ab -k -c 10`, median of 5 runs, 20-record
+endpoint): interpreter 17.6k req/s, **YJIT 22.3k (+27%)**, ZJIT 18.8k (+7%). In
+micro-benchmarks YJIT made the serializer 42% faster and a request 26% faster.
+ZJIT is newer; revisit when it matures.
+
 ---
 
 ## Proposed decisions (future phases)
@@ -428,7 +526,7 @@ reversible.
 
 See ARCHITECTURE §10. Fan-out through Postgres `LISTEN/NOTIFY` by default.
 
-### P-105 Compression (Phase 3) — Proposed
+### P-105 Compression — **Accepted as D-033**
 
 Own small middleware (Rack::Deflater lacks Brotli and size thresholds):
 negotiate `br` (if the `brotli` gem is available) then `gzip`, skip bodies

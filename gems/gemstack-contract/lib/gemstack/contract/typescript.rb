@@ -22,6 +22,26 @@ module GemStack
         files
       end
 
+      PAGE_TYPES = <<~TS
+        /** The pagination envelope returned by `paginate` in controllers. */
+        export type PageMeta = {
+          page: number;
+          per_page: number;
+          total: number;
+          total_pages: number;
+        };
+
+        export type Page<T> = {
+          data: T[];
+          meta: PageMeta;
+        };
+
+        export type PageQuery = {
+          page?: number;
+          per_page?: number;
+        };
+      TS
+
       private
 
       def header = "// #{HEADER}\n"
@@ -30,8 +50,11 @@ module GemStack
         body = @contract[:types].map do |name, type|
           "export type #{name} = #{object_type(type[:fields], 0)};\n"
         end
+        body.unshift(PAGE_TYPES) if paginated?
         "#{header}\n#{body.join("\n")}"
       end
+
+      def paginated? = @contract[:resources].any? { |r| r[:endpoints].any? { |e| e[:paginated] } }
 
       def object_type(fields, depth)
         return "Record<string, never>" if fields.empty?
@@ -51,6 +74,7 @@ module GemStack
         elsif ref[:array]
           inner = ts_type(ref[:array], depth)
           inner.match?(/\A[\w.]+\z/) ? "#{inner}[]" : "Array<#{inner}>"
+        elsif ref[:page] then "Page<#{ts_type(ref[:page], depth)}>"
         elsif ref[:object] then object_type(ref[:object], depth)
         else "unknown"
         end
@@ -80,7 +104,8 @@ module GemStack
         collect_refs(endpoint[:query], refs)
         collect_refs(endpoint[:response], refs)
         args << "data: #{ts_type(endpoint[:body])}" if endpoint[:body]
-        args << "query: #{ts_type(endpoint[:query])}" if endpoint[:query]
+        args << query_arg(endpoint) if endpoint[:query] || endpoint[:paginated]
+        refs << "PageQuery" if endpoint[:paginated]
         args << "options?: RequestOptions"
         response = endpoint[:response] ? ts_type(endpoint[:response]) : "void"
         call = "api.#{client_verb(endpoint[:verb])}<#{response}>(#{call_args(endpoint)})"
@@ -88,10 +113,19 @@ module GemStack
           "#{endpoint[:name]}: (#{args.join(", ")}) => #{call},"
       end
 
+      # Paginated lists take an optional { page, per_page } query, combined
+      # with the action's own query schema when there is one.
+      def query_arg(endpoint)
+        return "query: #{ts_type(endpoint[:query])}" unless endpoint[:paginated]
+        return "query?: PageQuery" unless endpoint[:query]
+
+        "query: #{ts_type(endpoint[:query])} & PageQuery"
+      end
+
       def call_args(endpoint)
         path = endpoint[:path].gsub(/[:*](\w+)/) { "${segment(#{camel(::Regexp.last_match(1))})}" }
         path = path.include?("${") ? "`#{path}`" : path.inspect
-        options = endpoint[:query] ? "{ ...options, query }" : "options"
+        options = endpoint[:query] || endpoint[:paginated] ? "{ ...options, query }" : "options"
         case client_verb(endpoint[:verb])
         when "get", "delete" then "#{path}, #{options}"
         else "#{path}, #{endpoint[:body] ? "data" : "undefined"}, #{options}"
@@ -104,7 +138,9 @@ module GemStack
         return unless ref
 
         refs << ref[:ref] if ref[:ref]
+        refs << "Page" if ref[:page]
         collect_refs(ref[:array], refs) if ref[:array]
+        collect_refs(ref[:page], refs) if ref[:page]
       end
 
       def index_file

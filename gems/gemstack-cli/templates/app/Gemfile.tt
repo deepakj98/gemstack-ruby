@@ -6,6 +6,7 @@ source "https://rubygems.org"
 # GemStack from a local checkout.
 path "<%= gemstack_path %>" do
   gem "gemstack"
+  gem "gemstack-cache"
   gem "gemstack-cli"
   gem "gemstack-contract"
   gem "gemstack-core"
@@ -25,7 +26,8 @@ gem "gemstack-db", "~> <%= version %>"
 gem "puma", ">= 6.4"
 
 # Any gem works here as usual, e.g.:
-# gem "oj"       # faster JSON: config.http.json = :oj
+# gem "brotli"         # Brotli compression (gzip is used without it)
+# gem "redis-client"   # shared cache: config.cache.store = :redis
 # gem "stripe"
 
 group :development, :test do

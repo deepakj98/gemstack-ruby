@@ -75,6 +75,10 @@ and build the frontend with `NEXT_PUBLIC_GEMSTACK_API_URL=https://api.example.co
 - PostgreSQL connections: `WEB_CONCURRENCY × GEMSTACK_MAX_THREADS` per host (pool per worker).
 - Terminate TLS at the proxy and forward `X-Forwarded-Proto` (HSTS depends on it).
 - `WEB_CONCURRENCY` ≈ CPU cores, `GEMSTACK_MAX_THREADS` 3–5.
+- YJIT is enabled automatically in production (`config.jit`); nothing to set.
+- Add `gem "brotli"` for Brotli compression; with a compressing CDN/proxy in front, either is fine
+  (GemStack never re-compresses encoded responses).
+- Several processes/hosts? Use `config.cache.store = :redis` (`gem "redis-client"`, `REDIS_URL`).
 - Health check: `GET /api/health` → `200 {"status":"ok"}`.
 - Collect stdout: each line is a JSON object with `level`, `msg`, `id`.
 

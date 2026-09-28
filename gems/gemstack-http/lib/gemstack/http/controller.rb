@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "digest"
+require "time"
+
 module GemStack
   module HTTP
     # Base class for API controllers.
@@ -35,6 +38,9 @@ module GemStack
       end
 
       RescueHandler = Struct.new(:classes, :handler, :status, :code)
+
+      # So controllers can write `returns :index, Page[ProductSerializer]`.
+      Page = HTTP::Page
 
       class << self
         def before_callbacks = @before_callbacks ||= inherited_copy(:before_callbacks)
@@ -183,6 +189,7 @@ module GemStack
       def serialize(value)
         case value
         when Hash, String, Numeric, Symbol, true, false, nil then value
+        when Page then { data: serialize(value.items), meta: value.meta }
         when Array
           serializer = value.first && Serializer.for(value.first.class)
           serializer ? serializer.many(value, serializer_context) : value
@@ -194,6 +201,63 @@ module GemStack
           serializer = Serializer.for(value.class)
           serializer ? serializer.serialize(value, serializer_context) : value
         end
+      end
+
+      # Paginates a dataset (or array) using the `page` and `per_page` query
+      # parameters, bounded by config.http.pagination:
+      #
+      #   render paginate(Product.order(:id))
+      #   render paginate(Product.where(active: true).order(:name), per_page: 50)
+      #
+      # Invalid values are a 422 with field errors. The dataset should be
+      # ordered, or pages may overlap.
+      def paginate(scope, per_page: nil)
+        settings = pagination_settings
+        max = settings.max_per_page
+        page, size = PAGE_SCHEMA.call(params).values_at(:page, :per_page)
+        size = (size || per_page || settings.per_page).clamp(1, max)
+        page ||= 1
+        total = scope.count
+        offset = (page - 1) * size
+        items = scope.is_a?(Array) ? scope[offset, size] || [] : scope.limit(size).offset(offset).all
+        Page.new(items, page: page, per_page: size, total: total)
+      end
+
+      PAGE_SCHEMA = Schema.define do
+        optional :page, :integer, gte: 1
+        optional :per_page, :integer, gte: 1
+      end
+
+      # HTTP caching. Sets ETag / Last-Modified and answers 304 Not Modified
+      # (without rendering) when the client already has this version:
+      #
+      #   def show
+      #     product = Product.find(params[:id])
+      #     render product if stale?(etag: product, last_modified: product.updated_at)
+      #   end
+      #
+      # etag: any value; records use #cache_key when they have one.
+      def stale?(etag: nil, last_modified: nil)
+        headers["etag"] = %(W/"#{Digest::SHA256.hexdigest(etag_source(etag))[0, 32]}") unless etag.nil?
+        headers["last-modified"] = last_modified.httpdate if last_modified
+        return true unless fresh?
+
+        head :not_modified
+        false
+      end
+
+      def fresh_when(**) = stale?(**)
+
+      #   cache_control max_age: 60                        # private, max-age=60
+      #   cache_control max_age: 300, public: true, stale_while_revalidate: 30
+      #   cache_control :no_store
+      def cache_control(directive = nil, max_age: nil, public: false, stale_while_revalidate: nil)
+        headers["cache-control"] =
+          if directive == :no_store then "no-store"
+          else
+            [public ? "public" : "private", ("max-age=#{Integer(max_age)}" if max_age),
+             ("stale-while-revalidate=#{Integer(stale_while_revalidate)}" if stale_while_revalidate)].compact.join(", ")
+          end
       end
 
       # Passed to serializers as `context` (e.g. { current_user: current_user }).
@@ -245,7 +309,34 @@ module GemStack
         end
       end
 
+      def pagination_settings = (env[CONFIG] || Config.new).pagination
+
+      def etag_source(value)
+        case value
+        when Array then value.map { |v| etag_source(v) }.join("/")
+        else value.respond_to?(:cache_key) ? value.cache_key.to_s : value.to_s
+        end
+      end
+
+      def fresh?
+        none_match = request.get_header("HTTP_IF_NONE_MATCH")
+        etag = headers["etag"]
+        if none_match && etag
+          tags = none_match.split(",").map { |t| t.strip.delete_prefix("W/") }
+          return tags.include?("*") || tags.include?(etag.delete_prefix("W/"))
+        end
+        modified_since = request.get_header("HTTP_IF_MODIFIED_SINCE")
+        last_modified = headers["last-modified"]
+        return false unless modified_since && last_modified
+
+        Time.httpdate(last_modified) <= Time.httpdate(modified_since)
+      rescue ArgumentError
+        false
+      end
+
       def apply_serializer(serializer, value)
+        return { data: serializer.many(value.items, serializer_context), meta: value.meta } if value.is_a?(Page)
+
         list = value.is_a?(Array) || (value.respond_to?(:all) && value.respond_to?(:model))
         list ? serializer.many(value, serializer_context) : serializer.serialize(value, serializer_context)
       end

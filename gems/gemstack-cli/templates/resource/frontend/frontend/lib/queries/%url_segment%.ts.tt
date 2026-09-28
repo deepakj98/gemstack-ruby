@@ -1,7 +1,7 @@
 "use client";
 
 // TanStack Query hooks for <%= spec.human_plural.downcase %>, built on the generated API client.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { <%= spec.client_name %> } from "@/lib/api/generated";
 import type { <%= [class_name, (spec.action?(:create) ? "#{class_name}Input" : nil), (spec.action?(:update) ? "#{class_name}UpdateInput" : nil)].compact.join(", ") %> } from "@/lib/api/generated";
 
@@ -11,8 +11,12 @@ export const <%= spec.variable %>Keys = {
 };
 <% if spec.action?(:index) -%>
 
-export function use<%= spec.plural_class %>() {
-  return useQuery({ queryKey: <%= spec.variable %>Keys.all, queryFn: () => <%= spec.client_name %>.list() });
+export function use<%= spec.plural_class %>(page = 1) {
+  return useQuery({
+    queryKey: [...<%= spec.variable %>Keys.all, "page", page],
+    queryFn: () => <%= spec.client_name %>.list({ page }),
+    placeholderData: keepPreviousData, // keep the current page visible while the next one loads
+  });
 }
 <% end -%>
 <% if spec.action?(:show) -%>

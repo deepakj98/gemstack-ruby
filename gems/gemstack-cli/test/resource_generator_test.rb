@@ -105,6 +105,8 @@ class ResourceGeneratorTest < Minitest::Test
                     "attributes :id, :name, :price, :description, :sku, :category_id, :active, :released_on, :created_at, :updated_at"
     controller = read("app/controllers/products_controller.rb")
 
+    assert_includes controller, "returns :index, Page[ProductSerializer]"
+    assert_includes controller, "render paginate(Product.order(:id))"
     assert_includes controller, "accepts :create, with: Product.input_schema"
     assert_includes controller, "accepts :update, with: Product.input_schema, partial: true"
     assert_includes controller, "render Product.create(input), status: :created"

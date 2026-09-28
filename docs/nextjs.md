@@ -25,7 +25,7 @@ and the hooks `generate resource` writes to `lib/queries/`:
 ```tsx
 import { useProducts, useCreateProduct } from "@/lib/queries/products";
 
-const products = useProducts();                 // useQuery
+const products = useProducts(page);             // useQuery → Page<Product> ({ data, meta })
 const create = useCreateProduct();              // useMutation, invalidates the list
 await create.mutateAsync({ name: "Lamp", price: "9.99" });
 ```

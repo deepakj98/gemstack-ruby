@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class <%= spec.plural_class %>Controller < ApplicationController
+<% if spec.action?(:index) -%>
+  returns :index, Page[<%= class_name %>Serializer]
+<% end -%>
 <% if spec.action?(:create) -%>
   accepts :create, with: <%= class_name %>.input_schema
 <% end -%>
@@ -9,9 +12,9 @@ class <%= spec.plural_class %>Controller < ApplicationController
 <% end -%>
 <% if spec.action?(:index) -%>
 
-  # GET /api/<%= spec.url_segment %>
+  # GET /api/<%= spec.url_segment %>?page=1&per_page=25
   def index
-    render <%= class_name %>.order(:id)
+    render paginate(<%= class_name %>.order(:id))
   end
 <% end -%>
 <% if spec.action?(:show) -%>

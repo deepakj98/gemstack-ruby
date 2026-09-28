@@ -136,3 +136,37 @@ rescue_from Faraday::TimeoutError, status: 504                   # envelope with
 
 `request` is a `Rack::Request` with extras: `request.request_id`,
 `request.path_params`, `request.route`, `request.json`, `request.json?`.
+
+## Pagination
+
+```ruby
+returns :index, Page[ProductSerializer]      # TypeScript: list(query?: PageQuery): Promise<Page<Product>>
+
+def index
+  render paginate(Product.where(active: true).order(:name))           # ?page=2&per_page=50
+end
+```
+
+```json
+{ "data": [ … ], "meta": { "page": 2, "per_page": 25, "total": 180, "total_pages": 8 } }
+```
+
+`per_page` defaults to `config.http.pagination.per_page` (25) and is capped at
+`max_per_page` (100); invalid values are a 422. Order the dataset so pages
+are stable. Arrays work too.
+
+## HTTP caching
+
+```ruby
+def show
+  product = Product.find(params[:id])
+  render product if stale?(etag: product, last_modified: product.updated_at)   # 304 skips rendering
+end
+
+cache_control max_age: 300, public: true, stale_while_revalidate: 30
+cache_control :no_store
+```
+
+Without these, buffered 200 responses still get an automatic weak ETag and
+304 handling (`config.http.etags`).
+

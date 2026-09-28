@@ -71,16 +71,26 @@ documented before the next begins.
       installed gems, runs `generate resource` → `db:migrate` → tests → typecheck → `gemstack dev`
 - [ ] Publish to RubyGems.org (claim the `gemstack*` names first — DECISIONS D-031)
 
-## Phase 3 — Performance defaults
+## Phase 3 — Performance defaults  *(complete)*
 
-- [ ] Compression middleware (Brotli when available, gzip fallback), thresholds, safe skips
-- [ ] JSON benchmark (stdlib vs Oj, with a reworked Oj adapter) and a decision on the default
-- [ ] Pagination convention for `index` actions (+ contract/TypeScript support)
-- [ ] Serializer and database benchmarks
-- [ ] Router / middleware / serialization benchmarks, allocation profiling
-- [ ] Caching foundations: `Cache.fetch`, memory store, Redis store adapter
-- [ ] ETag / conditional GET helpers
-- [ ] Production configuration review (Puma workers, preload, pool sizes)
+- [x] Compression middleware (Brotli when available, gzip fallback), thresholds, safe skips
+- [x] JSON benchmark (stdlib vs reworked Oj) → stdlib stays default (D-037)
+- [x] Router / middleware / serialization / compression / cache benchmarks, allocation counts
+- [x] Serializer optimisation from profiling evidence (3× faster, D-038)
+- [x] Caching foundations: `GemStack.cache`, memory / null / Redis stores (`gemstack-cache`)
+- [x] ETags / conditional GET (Rack) + `stale?` / `fresh_when` / `cache_control`
+- [x] Pagination convention for `index` actions, typed `Page<T>` in the contract, pager in generated pages
+- [x] Production review: YJIT by default (`config.jit`), compression levels, DB pool per thread
+- [x] End-to-end server benchmark (`benchmarks/server_bench.sh`)
+
+### Phase 3 verification
+
+- 304 tests across nine gems with PostgreSQL and Redis available (0 skipped); RuboCop clean.
+- Real Redis (`GEMSTACK_TEST_REDIS_URL`) and real PostgreSQL runs of the cache and DB suites.
+- `examples/shop` through the dev gateway: `{data, meta}` pages and `?page=` pager, 422 for
+  invalid pages, gzip-encoded responses with `Vary` and weak ETags, 304 on revalidation.
+- Not yet: cache stampede protection, keyset pagination, streaming compression for large
+  bodies of unknown length, database benchmarks.
 
 ## Phase 4 — Background processing
 

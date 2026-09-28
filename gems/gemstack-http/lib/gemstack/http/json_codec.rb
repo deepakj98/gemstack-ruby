@@ -49,7 +49,12 @@ module GemStack
           @max_nesting = max_nesting
         end
 
+        # Serializer output is already JSON-native, so try Oj's C strict mode
+        # first; only values with Time, BigDecimal, models... take the slower
+        # normalising path.
         def dump(object)
+          ::Oj.dump(object, mode: :strict)
+        rescue TypeError, EncodingError
           ::Oj.dump(normalize(object), mode: :strict)
         end
 

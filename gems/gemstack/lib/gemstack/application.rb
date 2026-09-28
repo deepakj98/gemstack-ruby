@@ -32,6 +32,7 @@ module GemStack
 
         load_env_files
         load_environment_config
+        enable_jit
         Plugins.run(self)
         setup_loader
         @router = build_router { load_routes }
@@ -94,6 +95,20 @@ module GemStack
     private
 
     def load_env_files = GemStack.load_env_files!
+
+    # Enables config.jit unless a JIT is already running (e.g. `ruby --yjit`).
+    def enable_jit
+      jit = config.jit
+      return unless jit
+
+      engine = { yjit: :YJIT, zjit: :ZJIT }.fetch(jit.to_sym) do
+        raise ConfigurationError, "unknown config.jit #{jit.inspect} (use :yjit, :zjit or nil)"
+      end
+      return unless RubyVM.const_defined?(engine)
+      return if %i[YJIT ZJIT].any? { |name| RubyVM.const_defined?(name) && RubyVM.const_get(name).enabled? }
+
+      RubyVM.const_get(engine).enable
+    end
 
     def load_environment_config
       file = root.join("config/environments/#{GemStack.env}.rb")

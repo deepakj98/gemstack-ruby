@@ -114,6 +114,13 @@ module GemStack
 
     alias update! update
 
+    # Identifies this version of the record, for ETags (Controller#stale?) and
+    # cache keys: "product/42-1759052159.123456".
+    def cache_key
+      stamp = respond_to?(:updated_at) && updated_at ? "-#{updated_at.to_f}" : ""
+      "#{Inflector.underscore(self.class.name.to_s)}/#{pk}#{stamp}"
+    end
+
     def validate
       super
       validate_fields

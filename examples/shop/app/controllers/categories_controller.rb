@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 class CategoriesController < ApplicationController
+  returns :index, Page[CategorySerializer]
   accepts :create, with: Category.input_schema
   accepts :update, with: Category.input_schema, partial: true
 
-  # GET /api/categories
+  # GET /api/categories?page=1&per_page=25
   def index
-    render Category.order(:id)
+    render paginate(Category.order(:id))
   end
 
   # GET /api/categories/:id

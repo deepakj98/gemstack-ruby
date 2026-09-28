@@ -75,8 +75,9 @@ GemStack is a monorepo of independent gems with one-directional dependencies.
    └──────────────────────▶ gemstack-core ◀────┘      (zero runtime dependencies)
                                    ▲
        gemstack-db (optional) ─────┴── gemstack-schema, sequel, pg
+       gemstack-cache ─────────────┘   (umbrella includes it; Redis via optional redis-client)
 
-Planned optional modules: gemstack-jobs, -cache, -realtime, -auth, -mailer, -storage
+Planned optional modules: gemstack-jobs, -realtime, -auth, -mailer, -storage
 (each depends on core, and on http only if it serves HTTP).
 ```
 
@@ -85,7 +86,7 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 1. **`gemstack-core` depends on nothing** (Ruby stdlib only) and never
    references another GemStack gem.
 2. Dependencies only point down the order
-   `core → schema → http → db → contract → dev → cli → umbrella`. **Core never
+   `core → cache → schema → http → db → contract → dev → cli → umbrella`. **Core never
    depends on an optional module**, and nothing depends on the umbrella.
 3. **`gemstack-db` never depends on `gemstack-http`**; it gives database errors
    their HTTP meaning through core's `ErrorMapping`.
@@ -96,7 +97,8 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 | Gem | Responsibility | Runtime deps |
 |---|---|---|
 | `gemstack-core` | `GemStack` namespace, settings DSL, environment, `.env` loading, logger, errors, `ErrorMapping`, inflector, plugins | none |
-| `gemstack-schema` | shared `Types`, request `Schema`s, `Serializer`s | core, bigdecimal |
+| `gemstack-cache` | `GemStack.cache`: memory (LRU/TTL), null, Redis stores | core |
+| `gemstack-schema` | shared `Types`, request `Schema`s, `Serializer`s (compiled plans) | core, bigdecimal |
 | `gemstack-http` | Rack request/response, router, middleware, controllers (`accepts`/`input`/`returns`, serializer lookup), params, JSON codec, error rendering | core, schema, rack, json |
 | `gemstack-db` | Sequel/PostgreSQL connection + pool, `GemStack::Model`, error mapping, migrations, db tasks, test support | core, schema, sequel, pg |
 | `gemstack-contract` | contract IR from routes/schemas/serializers → TypeScript types + clients, OpenAPI 3.1 | core, schema, http |
@@ -169,6 +171,7 @@ Puma ──▶ Rack env
 Middleware stack (config.http.middleware — ordered, editable)
   1. RequestId        assign / propagate X-Request-Id (validated, length-limited)
   2. RequestLogger    one structured log line per request, written when the body closes
+     Compression      br/gzip negotiation for compressible bodies ≥ 1 KB (D-033)
   3. ErrorHandler     exception boundary → JSON error; hides internals in production
      [dev] Reloader   reload app code + routes when files change (inside ErrorHandler,
                       so a SyntaxError while reloading becomes a JSON 500)
@@ -176,6 +179,7 @@ Middleware stack (config.http.middleware — ordered, editable)
   5. Cors             no-op until config.http.cors.origins is set
   6. BodyLimit        413 if Content-Length or streamed body exceeds max_body_size
   7. HealthCheck      GET <api_path>/health → 200 {"status":"ok"} (skips the router)
+  8. ETags            Rack::ConditionalGet + Rack::ETag: weak ETags, 304 Not Modified (D-036)
   │
   ▼
 Router  ── static-segment hash lookup, then dynamic segments; 404/405 with Allow
@@ -374,16 +378,19 @@ realtime.subscribe(`orders:${order.id}`, (event) => { /* ... */ })
 
 Principles: measure, then optimise; defaults must be fast without being clever.
 
-| Area | Phase 1 decision | Later |
-|---|---|---|
-| Server | Puma, threads/workers from ENV, `preload_app!` in production | benchmark vs Falcon for realtime |
-| Middleware | 7 small middlewares, compiled once (≈4 µs total, measured) | per-middleware cost benchmark |
-| Routing | static hash + dynamic segment trie | benchmark vs Mustermann-style regex |
-| JSON | stdlib `json` 2.x (fast since 2.10), Oj pluggable | benchmark; switch default only on evidence |
-| Params | lazy body parsing, size/depth limits | — |
-| Compression | — | Phase 3: br/gzip negotiation middleware, thresholds, streaming-aware |
-| DB | Sequel pool sized to Puma threads, lazy connect, slow-query warnings, `before_fork` disconnect | Phase 3: prepared statements, benchmarks |
-| Caching | — | Phase 3: `Cache.fetch` with memory / Redis / Postgres stores |
+| Area | Decision (measured — docs/performance.md) |
+|---|---|
+| Runtime | Ruby 4; YJIT on in production (+27% req/s, D-039) |
+| Server | Puma, threads/workers from ENV, `preload_app!`, DB disconnect before fork |
+| Middleware | compiled once; 9 small middlewares; ETags ≈ 2 µs |
+| Routing | static hash + dynamic segment trie (0.27 µs / 1.85 µs) |
+| JSON | stdlib `JSON::Coder`; Oj adapter available but slower (D-037) |
+| Serialization | compiled per-serializer plans (3× faster, D-038) |
+| Params | lazy body parsing, size/depth limits |
+| Compression | Brotli 4 / gzip 4 ≥ 1 KB, streaming-aware (D-033) |
+| Pagination | `{ data, meta }` envelope by default for generated `index` (D-034) |
+| DB | Sequel pool sized to threads, lazy connect, slow-query warnings |
+| Caching | HTTP: ETag/304 + `stale?`; app: `GemStack.cache` memory/Redis (D-035) |
 
 Benchmarks live in `benchmarks/` (plain Ruby scripts using `Benchmark` and
 `GC.stat` allocation counts) and results are recorded in `docs/performance.md`.

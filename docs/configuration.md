@@ -63,6 +63,33 @@ Replace it entirely with `GemStack.logger = MyLogger.new` (it must respond to
 | `config.http.cors.*` | off (`origins = []`) | `origins`, `methods`, `headers`, `expose_headers`, `credentials`, `max_age` |
 | `config.http.middleware` | default stack | see below |
 
+### Compression, ETags, pagination
+
+| Setting | Default |
+|---|---|
+| `config.http.compression.enabled` | `true` |
+| `config.http.compression.min_size` | `1024` bytes |
+| `config.http.compression.encodings` | `%w[br gzip]` (Brotli needs the `brotli` gem) |
+| `config.http.compression.brotli_quality` / `gzip_level` | `4` / `4` |
+| `config.http.etags` | `true` (Rack::ETag + Rack::ConditionalGet) |
+| `config.http.pagination.per_page` / `max_per_page` | `25` / `100` |
+
+### Cache (`gemstack-cache`)
+
+| Setting | Default |
+|---|---|
+| `config.cache.store` | `:memory` (`:null` in test); `:redis` or an object |
+| `config.cache.namespace` | the app name |
+| `config.cache.default_expires_in` | `nil` (seconds) |
+| `config.cache.max_entries` | `10_000` (memory store) |
+| `config.cache.redis_url` / `redis_pool_size` | `REDIS_URL` / `GEMSTACK_MAX_THREADS` |
+
+### Runtime
+
+| Setting | Default |
+|---|---|
+| `config.jit` | `:yjit` in production, `nil` elsewhere; `:zjit` opt-in; `GEMSTACK_JIT=yjit\|zjit\|off` |
+
 ### Middleware
 
 ```ruby
@@ -74,9 +101,9 @@ config.http.middleware.delete GemStack::HTTP::Middleware::SecurityHeaders
 config.http.middleware.names # inspect the order
 ```
 
-Default order: `RequestId`, `RequestLogger`, `ErrorHandler`, (`Reloader` in
-development), `SecurityHeaders`, `Cors`, `BodyLimit`, `HealthCheck`. Each is
-small and documented in its source file.
+Default order: `RequestId`, `RequestLogger`, `Compression`, `ErrorHandler`,
+(`Reloader` in development), `SecurityHeaders`, `Cors`, `BodyLimit`,
+`HealthCheck`, `ETags`. Each is small and documented in its source file.
 
 ### Development server
 
