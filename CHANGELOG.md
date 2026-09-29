@@ -2,6 +2,15 @@
 
 All GemStack gems are released together with one version.
 
+## 0.2.3
+
+- **Ruby 3.3 or newer** (was 4.0): tested on Ruby 3.3, 3.4 and 4.0 (`script/ruby-matrix`)
+- No assumed version manager: `gemstack doctor` and `gemstack dev` print the command for the tool that
+  installed your Ruby or Node.js (rbenv, rvm, asdf, mise, chruby, nvm, fnm, nodenv, Volta, Homebrew)
+- `gemstack dev` stops with a clear message and the fix when Node.js is older than 20.9
+- New apps pin Node.js in `.node-version`, `.nvmrc` and `.tool-versions`, next to Ruby
+- Getting started lists how to install Ruby and Node.js with each common tool
+
 ## 0.2.2
 
 - A designed welcome page for new apps (`frontend/app/page.tsx` + `page.module.css`): live Next.js and

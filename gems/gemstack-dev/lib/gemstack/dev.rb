@@ -13,6 +13,7 @@ module GemStack
     autoload :Ports, "gemstack/dev/ports"
     autoload :Supervisor, "gemstack/dev/supervisor"
     autoload :Terminal, "gemstack/dev/terminal"
+    autoload :Toolchain, "gemstack/dev/toolchain"
 
     class Config < Settings
       # The single public port.

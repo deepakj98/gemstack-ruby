@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "gemstack/dev"
+
 module GemStack
   class CLI < Thor
     # `gemstack new NAME` — a Ruby API + Next.js application containing the
@@ -30,8 +32,12 @@ module GemStack
 
       def version = GemStack::VERSION
 
-      # Pins the app to the Ruby that generated it (.ruby-version, .tool-versions).
+      # Pins the app to the Ruby that generated it, in files every version
+      # manager reads (.ruby-version: rbenv, rvm, chruby, asdf, mise;
+      # .tool-versions: asdf, mise), and Node.js likewise (.node-version,
+      # .nvmrc, .tool-versions) — DECISIONS D-066.
       def ruby_version = RUBY_VERSION
+      def node_version = @node_version ||= Dev::Toolchain.pinned_node_version
       def frontend? = !@options[:skip_frontend]
       def database? = !@options[:skip_database]
 
@@ -54,7 +60,8 @@ module GemStack
         database_adapter if database? # fail early on an unknown --database
         @output.puts("Creating GemStack application #{name} in #{destination}")
         render_directory("app", destination, skip: lambda { |rel|
-          !database? && (rel.start_with?("db/", "app/models/") || rel == "config/database.yml.tt")
+          (!database? && (rel.start_with?("db/", "app/models/") || rel == "config/database.yml.tt")) ||
+            (!frontend? && %w[dot_node-version.tt dot_nvmrc.tt].include?(rel))
         })
         render_directory("frontend", File.join(destination, "frontend")) if frontend?
         install unless @options[:skip_install]

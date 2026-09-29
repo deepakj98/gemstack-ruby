@@ -84,6 +84,7 @@ End-to-end check of the generators — creates an app with every field type and
 the known edge cases, then runs its Ruby tests, `tsc` and `next build`:
 
 ```bash
+script/ruby-matrix                             # the suite on Ruby 3.3, 3.4 and 4.0 (Docker images)
 script/e2e                                     # SQLite
 GEMSTACK_E2E_DATABASE=postgresql GEMSTACK_E2E_DATABASE_URL=postgres://user:pass@localhost:5432 script/e2e
 GEMSTACK_E2E_DATABASE=mysql2 GEMSTACK_E2E_DATABASE_URL=mysql2://root:pass@127.0.0.1:3306 script/e2e

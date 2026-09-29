@@ -30,7 +30,7 @@ class DoctorTest < Minitest::Test
     doc = doctor.tap(&:check_ruby)
 
     assert_equal :warn, doc.results.first.status
-    assert_includes @out.string, "asdf install ruby 3.3.0"
+    assert_includes @out.string, GemStack::Dev::Toolchain.ruby_hint("3.3.0")
     File.write("#{@root}/.ruby-version", "#{RUBY_VERSION}\n")
 
     assert_equal :ok, doctor.tap(&:check_ruby).results.first.status
@@ -38,10 +38,17 @@ class DoctorTest < Minitest::Test
 
   def test_node_versions
     FileUtils.mkdir_p("#{@root}/frontend")
-    @commands["node"] = "v18.19.0\n"
+    @commands["node"] = "v18.19.0 /Users/me/.nvm/versions/node/v18.19.0/bin/node\n"
+    doc = doctor.tap(&:check_node)
 
-    assert_equal [[:fail, "Node.js 18.19.0"]], statuses(doctor.tap(&:check_node))
-    @commands["node"] = "v22.11.0\n"
+    assert_equal [[:fail, "Node.js 18.19.0 (/Users/me/.nvm/versions/node/v18.19.0/bin/node)"]], statuses(doc)
+    assert_includes @out.string, "nvm install 22 && nvm use 22", "the hint uses the manager that installed node"
+    File.write("#{@root}/.node-version", "22.11.0\n")
+    @commands["node"] = "v18.19.0 /Users/me/.local/share/fnm/node-versions/v18/installation/bin/node\n"
+    doctor.tap(&:check_node)
+
+    assert_includes @out.string, "fnm install 22.11.0 && fnm use 22.11.0", "and the version the app pins"
+    @commands["node"] = "v22.11.0 /usr/local/bin/node\n"
 
     assert_equal [[:ok, "Node.js 22.11.0"]], statuses(doctor.tap(&:check_node))
     @commands.delete("node")

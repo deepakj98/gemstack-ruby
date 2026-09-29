@@ -2,6 +2,7 @@
 
 require "open3"
 require "socket"
+require "gemstack/dev"
 
 module GemStack
   class CLI < Thor
@@ -50,11 +51,11 @@ module GemStack
 
       def check_ruby
         wanted = read(".ruby-version")&.strip&.delete_prefix("ruby-")
-        if wanted && !wanted.empty? && !RUBY_VERSION.start_with?(wanted)
-          caution("Ruby #{RUBY_VERSION}",
-                  "the app pins #{wanted} (.ruby-version) — install it: asdf install ruby #{wanted}")
-        elsif Gem::Version.new(RUBY_VERSION) < Gem::Version.new("4.0")
-          problem("Ruby #{RUBY_VERSION}", "GemStack needs Ruby 4.0 or newer")
+        if !Dev::Toolchain.ruby_ok?
+          problem("Ruby #{RUBY_VERSION}", "GemStack needs Ruby #{Dev::Toolchain::MIN_RUBY} or newer — " \
+                                          "#{Dev::Toolchain.ruby_hint(wanted.to_s.empty? ? "3.4" : wanted)}")
+        elsif wanted && !wanted.empty? && !RUBY_VERSION.start_with?(wanted)
+          caution("Ruby #{RUBY_VERSION}", "the app pins #{wanted} (.ruby-version) — #{Dev::Toolchain.ruby_hint(wanted)}")
         else
           pass("Ruby #{RUBY_VERSION}#{" (YJIT available)" if defined?(RubyVM::YJIT)}")
         end
@@ -63,17 +64,17 @@ module GemStack
       def check_node
         return unless File.directory?(path("frontend"))
 
-        out, status = @run.call("node", "--version")
-        version = status.success? ? out.strip.delete_prefix("v") : nil
-        if version.nil?
-          problem("Node.js not found", "install Node.js #{MIN_NODE.join(".")}+ (the frontend is Next.js)")
-        elsif (version.split(".").map(&:to_i) <=> MIN_NODE).negative?
-          problem("Node.js #{version}", "Next.js 16 needs Node.js #{MIN_NODE.join(".")} or newer")
+        node = Dev::Toolchain.node(@run)
+        wanted = read(".node-version")&.strip || read(".nvmrc")&.strip || Dev::Toolchain::LTS_NODE
+        if node.nil?
+          problem("Node.js not found", Dev::Toolchain.node_hint(wanted, nil))
+        elsif !Dev::Toolchain.node_ok?(node[:version])
+          problem("Node.js #{node[:version]} (#{node[:path]})",
+                  "Next.js 16 needs #{MIN_NODE.join(".")}+ — " \
+                  "#{Dev::Toolchain.node_hint(wanted, Dev::Toolchain.node_manager(node[:path]))}")
         else
-          pass("Node.js #{version}")
+          pass("Node.js #{node[:version]}")
         end
-      rescue SystemCallError
-        problem("Node.js not found", "install Node.js #{MIN_NODE.join(".")}+ (the frontend is Next.js)")
       end
 
       def check_frontend_dependencies

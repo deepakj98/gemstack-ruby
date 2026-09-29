@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Runs the test suite on every supported Ruby, each in the official Docker
+# image (a clean Ruby, whatever version manager this machine uses):
+#
+#   script/ruby-matrix                       # Ruby 3.3, 3.4 and 4.0
+#   GEMSTACK_RUBIES="3.3" script/ruby-matrix
+#
+# Database suites run on SQLite inside the container, plus PostgreSQL / MySQL
+# when GEMSTACK_TEST_DATABASE_URL / GEMSTACK_TEST_MYSQL_URL are set (use
+# host.docker.internal to reach servers on this machine). Installed gems are
+# cached in Docker volumes (gemstack-bundle-<version>).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VERSIONS="${GEMSTACK_RUBIES:-3.3 3.4 4.0}"
+failed=()
+
+for version in $VERSIONS; do
+  printf "\n\033[1m== Ruby %s\033[0m\n" "$version"
+  if docker run --rm \
+      -v "$ROOT":/src:ro -v "gemstack-bundle-$version":/usr/local/bundle \
+      -e GEMSTACK_TEST_DATABASE_URL -e GEMSTACK_TEST_MYSQL_URL -e GEMSTACK_TEST_REDIS_URL \
+      "ruby:$version" bash -ec '
+        mkdir -p /work
+        tar -C /src --exclude=./.git --exclude=./pkg --exclude="*/node_modules" --exclude="*/.next" -cf - . | tar -C /work -xf -
+        cd /work
+        ruby -v
+        bundle install --jobs 4 --quiet
+        GEMSTACK_TEST_DATABASE_URL="${GEMSTACK_TEST_DATABASE_URL:-sqlite3:///tmp/gemstack_test.sqlite3}" \
+          bundle exec rake test test:databases
+      '; then
+    echo "Ruby $version: passed"
+  else
+    failed+=("$version")
+  fi
+done
+
+[ ${#failed[@]} -eq 0 ] || { echo "failed on Ruby: ${failed[*]}"; exit 1; }
+echo "all Rubies passed: $VERSIONS"

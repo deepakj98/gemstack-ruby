@@ -48,12 +48,14 @@ module GemStack
         def errors(plain)
           config = Auth.config
           length = plain.to_s.length
-          if plain.to_s.strip.empty? then ["is required"]
+          if plain.to_s.strip.empty?
+            ["is required"]
           elsif length < config.password_min_length
             ["is too short (minimum #{config.password_min_length} characters)"]
           elsif length > config.password_max_length
             ["is too long (maximum #{config.password_max_length} characters)"]
-          else []
+          else
+            []
           end
         end
 
