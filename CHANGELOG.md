@@ -2,6 +2,16 @@
 
 All GemStack gems are released together with one version.
 
+## 0.2.1
+
+- New apps get `config/environments/{development,test,production}.rb` listing the settings that usually
+  differ per environment, commented out with their defaults
+- Base classes in new apps: `ApplicationModel`, `ApplicationSerializer`, `ApplicationJob`,
+  `ApplicationMailer` (next to `ApplicationController`); generators and `gemstack add auth/storage`
+  inherit from them, and add them to older apps when missing
+- New apps include `gemstack-mail`
+- `gemstack new` generates the TypeScript contract, so `frontend/lib/api/generated` exists from the start
+
 ## 0.2.0
 
 Databases: SQLite, PostgreSQL and MySQL, configured by `config/database.yml`.

@@ -63,7 +63,8 @@ class ResourceGeneratorTest < Minitest::Test
     generate
 
     assert_equal %w[
-      app/controllers/products_controller.rb app/models/product.rb app/serializers/product_serializer.rb
+      app/controllers/products_controller.rb app/models/application_model.rb app/models/product.rb
+      app/serializers/application_serializer.rb app/serializers/product_serializer.rb
       config/routes.rb db/migrations/20260928120000_create_products.rb
       frontend/app/products/[id]/edit/page.tsx frontend/app/products/[id]/page.tsx frontend/app/products/new/page.tsx
       frontend/app/products/page.tsx frontend/components/products/ProductCard.tsx
@@ -72,6 +73,16 @@ class ResourceGeneratorTest < Minitest::Test
       test/controllers/products_controller_test.rb test/models/product_test.rb
     ], files
     assert_includes read("config/routes.rb"), "  resources :products\n"
+    assert_includes read("app/models/product.rb"), "class Product < ApplicationModel"
+    assert_includes read("app/serializers/product_serializer.rb"), "class ProductSerializer < ApplicationSerializer"
+  end
+
+  def test_existing_base_classes_are_kept
+    FileUtils.mkdir_p("#{@root}/app/models")
+    File.write("#{@root}/app/models/application_model.rb", "# mine\n")
+    generate
+
+    assert_equal "# mine\n", read("app/models/application_model.rb")
   end
 
   def test_migration
@@ -233,7 +244,7 @@ class JobGeneratorTest < Minitest::Test
     generate("SendWelcomeEmail", queue: "mailers")
     job = File.read("#{@root}/app/jobs/send_welcome_email.rb")
 
-    assert_includes job, "class SendWelcomeEmail < GemStack::Job"
+    assert_includes job, "class SendWelcomeEmail < ApplicationJob"
     assert_includes job, "queue :mailers"
     assert_includes File.read("#{@root}/test/jobs/send_welcome_email_test.rb"), "assert_enqueued SendWelcomeEmail, args: [1]"
     migrations = Dir.glob("#{@root}/db/migrations/*_create_gemstack_jobs.rb")
@@ -440,6 +451,18 @@ class DeployGeneratorTest < Minitest::Test
     assert_includes ignore, ".env\n"
     assert_includes ignore, "!.env.example"
     assert File.exist?("#{@root}/vendor/.keep")
+  end
+
+  def test_base_classes_alone_are_not_background_work
+    FileUtils.rm_rf("#{@root}/app/jobs")
+    FileUtils.mkdir_p(%W[#{@root}/app/jobs #{@root}/app/mailers])
+    File.write("#{@root}/app/jobs/application_job.rb", "")
+    File.write("#{@root}/app/mailers/application_mailer.rb", "")
+
+    refute GemStack::CLI::Generator.background_work?(@root)
+    File.write("#{@root}/app/jobs/digest.rb", "")
+
+    assert GemStack::CLI::Generator.background_work?(@root)
   end
 
   def test_api_only_app_without_jobs

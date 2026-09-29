@@ -34,6 +34,7 @@ module GemStack
       end
 
       def run
+        ensure_base_classes(@root, *(%i[model serializer] & @parts))
         @parts.each { |part| render_part(part) }
         add_routes if @parts.include?(:controller)
         self

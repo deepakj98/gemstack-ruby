@@ -33,7 +33,7 @@ Open **http://localhost:3000** — the starter page calls
 `gemstack dev` prints:
 
 ```text
-  GemStack v0.2.0 · development
+  GemStack v0.2.1 · development
 
   ✓ Gateway    http://localhost:3000  (/api/* → Ruby, everything else → Next.js)
   … Ruby API   starting on 127.0.0.1:52011 (internal)
@@ -101,10 +101,17 @@ cd frontend && npm run typecheck
 ## What's in the project
 
 ```text
-config/app.rb        GemStack.configure — the one configuration file
+config/app.rb        GemStack.configure — settings for every environment
+config/environments/ development.rb, test.rb, production.rb — per-environment settings, defaults as comments
+config/database.yml  the database connection per environment
 config/routes.rb     routes, relative to /api
 config/puma.rb       server settings (threads/workers via ENV)
-app/controllers/     ApplicationController + yours; any app/<dir> autoloads (models/, serializers/, services/…)
+app/controllers/     ApplicationController and yours
+app/models/          ApplicationModel and yours
+app/serializers/     ApplicationSerializer and yours
+app/jobs/            ApplicationJob and yours (background jobs)
+app/mailers/         ApplicationMailer and yours; templates/ for their ERB
+                     (any other app/<dir> autoloads too: services/, policies/…)
 db/migrations/       Sequel migrations; db/seeds.rb for development data
 test/                GemStack::TestCase tests
 frontend/            Next.js App Router + TypeScript + TanStack Query

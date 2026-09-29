@@ -25,7 +25,7 @@ class ProductsController < ApplicationController
   end
 end
 
-class ProductSerializer < GemStack::Serializer
+class ProductSerializer < ApplicationSerializer
   attribute :image_url, :string, nullable: true do |product|
     product.image_key && GemStack::Storage.url(product.image_key)   # signed, expires in 5 minutes
   end

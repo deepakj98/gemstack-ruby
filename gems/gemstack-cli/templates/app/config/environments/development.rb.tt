@@ -1,0 +1,35 @@
+# frozen_string_literal: true
+
+# Development settings: applied after config/app.rb when GEMSTACK_ENV=development
+# (the default). Each line shows the default value — uncomment one to change it.
+# All settings: docs/configuration.md.
+GemStack.configure do |config|
+  # ── Code ────────────────────────────────────────────────────────────────
+  # config.reload_code = true                  # reload app/ and config/routes.rb when they change
+  # config.eager_load = false                  # load app/ lazily, for a faster boot
+  # config.jit = nil                           # :yjit or :zjit to try Ruby's JIT locally
+
+  # ── Logging ─────────────────────────────────────────────────────────────
+  # config.logger.level = :debug               # :debug, :info, :warn, :error (or GEMSTACK_LOG_LEVEL)
+  # config.logger.format = :pretty             # readable lines; :json to see what production logs
+
+  # ── HTTP ────────────────────────────────────────────────────────────────
+  # config.http.show_exceptions = true         # 500s carry the exception; browsers get an error page
+  # config.contract.docs = true                # interactive API docs at /api/docs
+
+  # ── gemstack dev ────────────────────────────────────────────────────────
+  # config.dev.port = 3000                     # the one public port (or PORT)
+  # config.dev.jobs_command = %w[bundle exec gemstack jobs]   # nil: don't start a jobs worker
+<% if database? -%>
+
+  # ── Database (connection: config/database.yml) ──────────────────────────
+  # config.db.log_queries = true               # every SQL statement at DEBUG
+  # config.db.slow_query_ms = 500              # slower queries are logged at WARN
+<% end -%>
+
+  # ── Cache ───────────────────────────────────────────────────────────────
+  # config.cache.store = :memory               # :null to switch caching off, :redis to share it
+
+  # ── Mail ────────────────────────────────────────────────────────────────
+  # config.mail.delivery = :log                # saved to tmp/mail (.eml + .html); :smtp really sends
+end

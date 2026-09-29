@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class <%= class_name %> < GemStack::Model
+class <%= class_name %> < ApplicationModel
 <% fields.each do |field| -%>
   <%= model_field(field) %>
 <% end -%>

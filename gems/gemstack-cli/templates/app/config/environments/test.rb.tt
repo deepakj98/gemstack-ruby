@@ -1,0 +1,21 @@
+# frozen_string_literal: true
+
+# Test settings: applied after config/app.rb when tests run (`gemstack test`).
+# Each line shows the default value — uncomment one to change it.
+GemStack.configure do |config|
+  # ── Logging ─────────────────────────────────────────────────────────────
+  # config.logger.level = :debug               # logs are discarded in tests unless this (or GEMSTACK_LOG_LEVEL) is set
+
+  # ── HTTP ────────────────────────────────────────────────────────────────
+  # config.http.show_exceptions = true         # a failing request's JSON includes the exception
+<% if database? -%>
+
+  # ── Database (connection: the test section of config/database.yml, or TEST_DATABASE_URL) ──
+  # config.db.log_queries = false
+<% end -%>
+
+  # ── Background work is recorded, not performed ──────────────────────────
+  # config.jobs.adapter = :test                # assert_enqueued / perform_enqueued_jobs; :inline runs jobs at once
+  # config.mail.delivery = :test               # assert_emails / last_email
+  # config.cache.store = :null                 # no caching, so tests can't leak into each other; :memory to test it
+end

@@ -13,7 +13,7 @@ gemstack db:migrate          # the first job adds the gemstack_jobs table
 
 ```ruby
 # app/jobs/send_welcome_email.rb
-class SendWelcomeEmail < GemStack::Job
+class SendWelcomeEmail < ApplicationJob
   queue :mailers                                     # default: "default"
   priority 10                                        # lower runs first; default 100
   retry_on Net::ReadTimeout, attempts: 5, wait: 30   # seconds, :exponential, or ->(attempt) { … }

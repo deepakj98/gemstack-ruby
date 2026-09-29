@@ -59,6 +59,28 @@ module GemStack
       end
 
       # Every template file for a generator, with app overrides applied.
+      # The app's base classes (written by `gemstack new` since 0.2.1). Apps
+      # created earlier get the ones a generator's code inherits from.
+      BASE_CLASSES = {
+        model: "app/models/application_model.rb", serializer: "app/serializers/application_serializer.rb",
+        job: "app/jobs/application_job.rb", mailer: "app/mailers/application_mailer.rb"
+      }.freeze
+
+      # Whether the app has jobs or mailers of its own (base classes don't count).
+      def self.background_work?(root)
+        %w[app/jobs/*.rb app/mailers/*.rb].any? do |glob|
+          Dir.glob(File.join(root, glob)).any? { |file| !File.basename(file).start_with?("application_") }
+        end
+      end
+
+      def ensure_base_classes(root, *kinds)
+        kinds.each do |kind|
+          rel = BASE_CLASSES.fetch(kind)
+          target = File.join(root, rel)
+          write(target, File.read(File.join(template_root("app"), rel))) unless File.exist?(target)
+        end
+      end
+
       def template_files(name, override_root: nil)
         files = relative_files(template_root(name)).to_h { |rel| [rel, File.join(template_root(name), rel)] }
         if override_root

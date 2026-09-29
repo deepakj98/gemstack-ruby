@@ -18,8 +18,7 @@ module GemStack
       def jobs?
         return true if gemfile.match?(/^\s*gem "gemstack-auth"/)
 
-        gemfile.match?(/^\s*gem "gemstack-jobs"/) &&
-          %w[app/jobs/*.rb app/mailers/*.rb].any? { |glob| !Dir.glob(File.join(@root, glob)).empty? }
+        gemfile.match?(/^\s*gem "gemstack-jobs"/) && Generator.background_work?(@root)
       end
 
       def mail? = gemfile.match?(/^\s*gem "gemstack-(mail|auth)"/)

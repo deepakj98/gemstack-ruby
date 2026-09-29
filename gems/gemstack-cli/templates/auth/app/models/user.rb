@@ -2,7 +2,7 @@
 
 # Accounts. GemStack::Auth::User adds password hashing (Argon2id), email
 # normalization, validations and User.authenticate_by(email:, password:).
-class User < GemStack::Model
+class User < ApplicationModel
   include GemStack::Auth::User
 
   field :email, :string, null: false, size: 254

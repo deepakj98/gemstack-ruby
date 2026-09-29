@@ -60,13 +60,13 @@ generates the migration, model, serializer, controller, routes, tests, a typed
 TypeScript client and Next.js pages. The pieces stay small and readable:
 
 ```ruby
-class Product < GemStack::Model
+class Product < ApplicationModel
   field :name, :string, null: false, size: 255     # declared once: validations, request schema,
   field :price, :decimal, null: false               # serializer types and TypeScript all derive from it
   field :description, :text
 end
 
-class ProductSerializer < GemStack::Serializer
+class ProductSerializer < ApplicationSerializer
   attributes :id, :name, :price, :description, :created_at, :updated_at
 end
 
@@ -111,7 +111,7 @@ server database ([databases](docs/database.md)).
 
 ```bash
 gem install gemstack
-gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.0"
+gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.1"
 ```
 
 The `gemstack` gem is the framework: it brings every module an app needs
