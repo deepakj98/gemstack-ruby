@@ -5,7 +5,7 @@ require "securerandom"
 require "gemstack/core"
 
 module GemStack
-  # Background jobs (ARCHITECTURE §9, DECISIONS D-040).
+  # Background jobs (ARCHITECTURE §9).
   #
   #   class SendWelcomeEmail < GemStack::Job
   #     queue :mailers

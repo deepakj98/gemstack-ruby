@@ -4,7 +4,7 @@ module GemStack
   module DB
     # Migrations may use PostgreSQL's type names — the generators write
     # `column :created_at, :timestamptz` — and still run on MySQL and SQLite,
-    # where each maps to the closest native type (DECISIONS D-062). Everything
+    # where each maps to the closest native type. Everything
     # else in the Sequel schema DSL is untouched.
     module SchemaTypes
       MAPPINGS = {

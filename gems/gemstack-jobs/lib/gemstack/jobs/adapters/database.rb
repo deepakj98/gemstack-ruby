@@ -51,7 +51,7 @@ module GemStack
 
     module Adapters
       # The default adapter: jobs are rows in the application's database
-      # (DECISIONS D-040, D-063) — PostgreSQL, MySQL or SQLite.
+      # — PostgreSQL, MySQL or SQLite.
       #
       # - Enqueueing is an INSERT on the current connection, so inside
       #   GemStack.transaction a job exists only if the transaction commits.

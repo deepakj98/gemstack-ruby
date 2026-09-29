@@ -75,7 +75,8 @@ end
 
 class AuthTestCase < Minitest::Test
   include AuthDB
-  include GemStack::DB::Testing::Transactions
+  # Only with a database: the transaction wraps the test before setup can skip it.
+  include GemStack::DB::Testing::Transactions if AuthDB.available?
 
   PASSWORD = "correct horse battery staple"
 

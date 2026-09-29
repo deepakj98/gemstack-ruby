@@ -35,7 +35,7 @@ module GemStack
       # Pins the app to the Ruby that generated it, in files every version
       # manager reads (.ruby-version: rbenv, rvm, chruby, asdf, mise;
       # .tool-versions: asdf, mise), and Node.js likewise (.node-version,
-      # .nvmrc, .tool-versions) — DECISIONS D-066.
+      # .nvmrc, .tool-versions).
       def ruby_version = RUBY_VERSION
       def node_version = @node_version ||= Dev::Toolchain.pinned_node_version
       def frontend? = !@options[:skip_frontend]

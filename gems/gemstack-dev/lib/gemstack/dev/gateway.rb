@@ -6,7 +6,7 @@ require "json"
 module GemStack
   module Dev
     # The development gateway: one public origin in front of Next.js and the
-    # Ruby API (DECISIONS D-008).
+    # Ruby API.
     #
     # For each connection it reads only the request line and headers, picks
     # an upstream by path (api_path → API, everything else → frontend), adds

@@ -4,7 +4,7 @@ require "argon2"
 
 module GemStack
   module Auth
-    # Password hashing with Argon2id (DECISIONS D-049). Hashes from other
+    # Password hashing with Argon2id. Hashes from other
     # systems in bcrypt format still verify (add gem "bcrypt") and are
     # upgraded to Argon2id on the next successful login.
     module Password

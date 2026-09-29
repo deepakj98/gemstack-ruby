@@ -10,7 +10,7 @@ require_relative "db/configuration"
 require_relative "db/schema_types"
 
 module GemStack
-  # SQL databases through Sequel (DECISIONS D-018, D-062): PostgreSQL, MySQL
+  # SQL databases through Sequel: PostgreSQL, MySQL
   # (mysql2 or trilogy) and SQLite, configured by config/database.yml or
   # DATABASE_URL. Optional: add `gem "gemstack-db"` and the driver gem
   # (pg, mysql2, trilogy or sqlite3) to the Gemfile — `gemstack new` does.

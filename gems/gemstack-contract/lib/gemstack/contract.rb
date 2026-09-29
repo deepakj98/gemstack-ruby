@@ -9,7 +9,7 @@ require "gemstack/http"
 module GemStack
   # The API contract: derived from the backend (routes + controller `accepts`
   # schemas + serializers) and emitted as TypeScript types, a typed client
-  # per resource, and OpenAPI 3.1 (ARCHITECTURE §8, DECISIONS D-023).
+  # per resource, and OpenAPI 3.1 (ARCHITECTURE §8).
   #
   #   contract = GemStack::Contract.build(GemStack.boot!)
   #   GemStack::Contract.write(contract, root: GemStack.root)

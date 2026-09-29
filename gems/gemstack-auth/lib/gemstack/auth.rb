@@ -9,7 +9,7 @@ require "gemstack/db"
 require "gemstack/mail"
 
 module GemStack
-  # Authentication (DECISIONS D-048..D-052): Argon2id passwords, database
+  # Authentication: Argon2id passwords, database
   # sessions in an HttpOnly cookie for the Next.js frontend, and bearer API
   # tokens for scripts and other services. `gemstack add auth` generates the
   # tables, the User model, the controllers, the emails and the Next.js pages

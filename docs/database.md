@@ -1,7 +1,7 @@
 # Databases
 
 GemStack works with **SQLite**, **PostgreSQL** and **MySQL** through
-[Sequel](https://sequel.jeremyevans.net) (DECISIONS D-018, D-062).
+[Sequel](https://sequel.jeremyevans.net).
 
 ```bash
 gemstack new shop                        # SQLite — nothing to install or run

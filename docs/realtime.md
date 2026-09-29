@@ -145,4 +145,4 @@ Test channel rules directly with `GemStack.channels.authorized?(name, request)`.
 | `config.realtime.redis_url` / `redis_channel` | `REDIS_URL` / `gemstack:realtime:<app>` |
 
 Not included (yet): presence (who's online), a WebSocket transport, typed
-channel/event contracts in TypeScript. See DECISIONS D-044.
+channel/event contracts in TypeScript.

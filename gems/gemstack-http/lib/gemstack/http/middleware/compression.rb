@@ -5,7 +5,7 @@ require "zlib"
 module GemStack
   module HTTP
     module Middleware
-      # Response compression with content negotiation (DECISIONS D-033).
+      # Response compression with content negotiation.
       #
       # - Negotiates Accept-Encoding (with q-values): Brotli when the `brotli`
       #   gem is available, otherwise gzip.

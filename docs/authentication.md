@@ -57,7 +57,7 @@ database stores only its SHA-256 digest (`sessions`), so a database leak
 doesn't hand out sessions, and sessions can be listed and revoked — a
 password reset really ends them. Sessions last 30 days and slide on use. The
 Next.js frontend and the API share an origin, so there is nothing to
-configure and no token in JavaScript to steal (DECISIONS D-048).
+configure and no token in JavaScript to steal.
 
 **Scripts and other services** send `Authorization: Bearer gs_…` with a
 personal API token from `/account`. Tokens are also stored as digests; they

@@ -2,7 +2,7 @@
 
 module GemStack
   module Contract
-    # Development API docs (DECISIONS D-056):
+    # Development API docs:
     #   GET <api_path>/docs               interactive page (self-contained, no CDN)
     #   GET <api_path>/docs/openapi.json  OpenAPI 3.1 built from the current routes
     # Rebuilt on every request, so it always matches the code after a reload.

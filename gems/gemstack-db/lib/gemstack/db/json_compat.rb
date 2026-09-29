@@ -5,7 +5,7 @@ module GemStack
     # Sequel (5.108 and earlier) parses JSON/JSONB columns with
     # JSON.parse(json, create_additions: false), an option json 3.0 removed, so
     # every jsonb read raises ArgumentError. JSON.parse never creates additions,
-    # so dropping the option keeps Sequel's behaviour (DECISIONS D-041).
+    # so dropping the option keeps Sequel's behaviour.
     module JSONCompat
       def parse_json(json) = JSON.parse(json)
 

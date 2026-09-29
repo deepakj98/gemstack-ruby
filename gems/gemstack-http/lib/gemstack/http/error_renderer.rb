@@ -4,7 +4,7 @@ require "json"
 
 module GemStack
   module HTTP
-    # Turns an exception into the standard JSON error envelope (DECISIONS D-015):
+    # Turns an exception into the standard JSON error envelope:
     #
     #   {"error": {"code": "not_found", "message": "Not Found", "request_id": "..."},
     #    "errors": {"name": ["is required"]}}

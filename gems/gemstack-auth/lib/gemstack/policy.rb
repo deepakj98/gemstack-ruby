@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module GemStack
-  # Authorization rules, one policy class per model (DECISIONS D-052):
+  # Authorization rules, one policy class per model:
   #
   #   class OrderPolicy < GemStack::Policy
   #     def show? = owner? || user&.admin?

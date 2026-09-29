@@ -2,6 +2,11 @@
 
 All GemStack gems are released together with one version.
 
+## 0.2.5
+
+- Documentation: removed the internal planning documents (roadmap, decision log, release checklist)
+  and the references to them; the README no longer carries a development status block
+
 ## 0.2.4
 
 - `docs/pagination.md`: how pagination works, changing the page size (app, action, request), the

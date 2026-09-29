@@ -33,8 +33,8 @@ pages?, tests?).
 |---|---|
 | Modifiers | `optional` (nullable), `unique`, `index` |
 
-Fields are **required** (NOT NULL + "is required") unless `:optional`
-(DECISIONS D-025). Booleans are `NOT NULL DEFAULT false`. `category:references`
+Fields are **required** (NOT NULL + "is required") unless `:optional`.
+Booleans are `NOT NULL DEFAULT false`. `category:references`
 creates `category_id` with a foreign key (`ON DELETE RESTRICT`), an index and
 `belongs_to :category`.
 

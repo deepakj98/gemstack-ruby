@@ -146,5 +146,3 @@ and build the frontend with `NEXT_PUBLIC_GEMSTACK_API_URL=https://api.example.co
   a bucket CORS rule allowing `PUT` from your site (docs/storage.md).
 - Health check: `GET /api/health` → `200 {"status":"ok"}`.
 - Collect stdout: each line is a JSON object with `level`, `msg`, `id`.
-
-Deployment recipes (Docker, Fly, Render, Railway) are planned for Phase 7.

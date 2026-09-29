@@ -6,7 +6,7 @@ require "uri"
 require "gemstack/core"
 
 module GemStack
-  # Email (DECISIONS D-047).
+  # Email.
   #
   #   class AccountMailer < GemStack::Mailer
   #     default from: "Shop <hello@shop.test>"

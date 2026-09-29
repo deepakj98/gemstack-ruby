@@ -6,7 +6,7 @@ require "gemstack/schema"
 require "gemstack/http"
 
 module GemStack
-  # Realtime updates to browsers (ARCHITECTURE §10, DECISIONS D-044).
+  # Realtime updates to browsers (ARCHITECTURE §10).
   #
   #   GemStack.broadcast("orders:#{order.id}", "order.updated", order)   # anywhere: controllers, jobs, console
   #

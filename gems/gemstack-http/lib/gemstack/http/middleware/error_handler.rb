@@ -20,7 +20,7 @@ module GemStack
           return response if response[0] < 500
 
           report(e, env)
-          # Development: a browser opening the URL gets a readable page (DECISIONS D-055).
+          # Development: a browser opening the URL gets a readable page.
           @show_exceptions && ErrorPage.browser?(env) ? ErrorPage.render(e, env, request_id: env[REQUEST_ID]) : response
         end
 

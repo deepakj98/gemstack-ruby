@@ -7,7 +7,7 @@ require "gemstack/dev"
 module GemStack
   class CLI < Thor
     # `gemstack doctor` — checks that an application can run, and says how to
-    # fix what can't (DECISIONS D-057). Every check is independent: one
+    # fix what can't. Every check is independent: one
     # failure never hides the others. `--production` checks the settings a
     # deploy needs.
     class Doctor
