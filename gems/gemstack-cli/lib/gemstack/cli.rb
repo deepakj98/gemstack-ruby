@@ -86,7 +86,7 @@ module GemStack
     method_option :grep, aliases: "-g", type: :string, desc: "Only routes matching this text"
     def routes
       root = Project.ensure_bundle!(self.class.argv)
-      ENV["GEMSTACK_ENV"] ||= "development"
+      use_environment!
       Project.load_config!(root)
       GemStack.config.reload_code = false
       GemStack.config.logger.level = :warn
@@ -101,7 +101,7 @@ module GemStack
     desc "console", "Start an IRB session with the application loaded (alias: c)"
     def console
       root = Project.ensure_bundle!(self.class.argv)
-      ENV["GEMSTACK_ENV"] = options[:environment] || ENV["GEMSTACK_ENV"] || "development"
+      use_environment!
       Project.load_config!(root)
       GemStack.boot!
       require "irb"
@@ -228,6 +228,9 @@ module GemStack
     end
 
     no_commands do
+      # -e ENV, else GEMSTACK_ENV, else development.
+      def use_environment! = ENV["GEMSTACK_ENV"] = options[:environment] || ENV["GEMSTACK_ENV"] || "development"
+
       def generate_model(root, name, args)
         abort("Usage: gemstack generate model NAME field:type ...") unless name && !args.empty?
         spec = ResourceSpec.new(name, args)
