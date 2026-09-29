@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
   spec.homepage = "https://github.com/gemstack/gemstack"
   spec.required_ruby_version = ">= 4.0"
-  spec.files = Dir["lib/**/*.rb"]
+  spec.files = Dir["lib/**/*.{rb,html}"]
   spec.require_paths = ["lib"]
   spec.metadata["rubygems_mfa_required"] = "true"
 

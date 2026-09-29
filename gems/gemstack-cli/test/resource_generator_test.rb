@@ -401,3 +401,61 @@ class AddGeneratorTest < Minitest::Test
     assert_includes File.read("#{@root}/test/policies/order_policy_test.rb"), "class OrderPolicyTest < GemStack::TestCase"
   end
 end
+
+class DeployGeneratorTest < Minitest::Test
+  def setup
+    @root = File.join(Dir.mktmpdir, "my_shop")
+    FileUtils.mkdir_p(%W[#{@root}/frontend #{@root}/app/jobs])
+    File.write("#{@root}/frontend/package.json", "{}")
+    File.write("#{@root}/.ruby-version", "4.0.7\n")
+    File.write("#{@root}/.tool-versions", "ruby 4.0.7\nnodejs 22.11.0\n")
+    @out = StringIO.new
+  end
+
+  def teardown = FileUtils.rm_rf(File.dirname(@root))
+
+  def generate(gemfile)
+    File.write("#{@root}/Gemfile", gemfile)
+    GemStack::CLI::DeployGenerator.new(root: @root, output: @out).run
+  end
+
+  def test_full_stack_app
+    File.write("#{@root}/app/jobs/digest.rb", "")
+    generate(%(gem "gemstack", "~> 0.1.0"\ngem "gemstack-db"\ngem "gemstack-jobs"\ngem "gemstack-auth"\n))
+    dockerfile = File.read("#{@root}/Dockerfile")
+    compose = File.read("#{@root}/compose.yaml")
+
+    assert_includes dockerfile, "ARG RUBY_VERSION=4.0.7"
+    assert_includes dockerfile, "ARG NODE_VERSION=22"
+    assert_includes dockerfile, "FROM node:${NODE_VERSION}-slim AS web"
+    assert_includes dockerfile, "USER app"
+    assert_includes compose, "name: my-shop"
+    assert_includes compose, "  jobs:\n    image: my_shop-api"
+    assert_includes compose, "SMTP_URL"
+    assert_includes compose, "SECRET_KEY_BASE: ${SECRET_KEY_BASE:?"
+    assert_includes File.read("#{@root}/Caddyfile"), "reverse_proxy web:3000"
+    assert_includes File.read("#{@root}/Procfile"), "worker: bundle exec gemstack jobs"
+    ignore = File.read("#{@root}/.dockerignore")
+
+    assert_includes ignore, ".env\n"
+    assert_includes ignore, "!.env.example"
+    assert File.exist?("#{@root}/vendor/.keep")
+  end
+
+  def test_api_only_app_without_jobs
+    FileUtils.rm_rf("#{@root}/frontend")
+    generate(%(gem "gemstack", "~> 0.1.0"\n))
+
+    refute_includes File.read("#{@root}/Dockerfile"), "AS web"
+    refute_includes File.read("#{@root}/compose.yaml"), "  jobs:"
+    refute_includes File.read("#{@root}/compose.yaml"), "SMTP_URL"
+    refute_includes File.read("#{@root}/Caddyfile"), "web:3000"
+    refute_includes File.read("#{@root}/Procfile"), "worker:"
+  end
+
+  def test_warns_about_local_gem_paths
+    generate(%(path "/src/gemstack/gems" do\n  gem "gemstack"\nend\n))
+
+    assert_includes @out.string, "bundle cache --all"
+  end
+end

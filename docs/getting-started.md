@@ -118,4 +118,8 @@ There is no User model, no authentication and no CRUD: you decide what the
 application contains. Add them when you need them: `gemstack add auth`
 ([authentication](authentication.md)), `gemstack add storage` ([storage](storage.md)).
 
+Something not working? `gemstack doctor` checks your setup and says what to fix; while `gemstack dev`
+runs, [http://localhost:3000/api/docs](http://localhost:3000/api/docs) lists every endpoint
+([development tools](development.md)).
+
 Next: [routing](routing.md), [controllers](controllers.md), [configuration](configuration.md).

@@ -4,6 +4,7 @@ require "gemstack/core"
 require "gemstack/cache"
 require "gemstack/http"
 require "gemstack/dev"
+require "gemstack/contract" # /api/docs in development; `gemstack contract`
 require_relative "gemstack/interlock"
 require_relative "gemstack/reloader"
 require_relative "gemstack/application"
