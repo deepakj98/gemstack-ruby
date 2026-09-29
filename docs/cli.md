@@ -17,12 +17,34 @@ gemstack new shop --skip-git
 gemstack dev              # Next.js + Ruby API + jobs worker behind one port → http://localhost:3000
 PORT=3001 gemstack dev    # another port
 gemstack server           # only the Ruby API (Puma); alias: s
-gemstack console          # IRB with the app loaded; alias: c
+gemstack console          # IRB with the app loaded (-e production for another environment); alias: c
 gemstack routes           # list API routes (-g TEXT to filter)
 gemstack test             # run the Ruby tests (or: gemstack test test/models/product_test.rb); alias: t
 gemstack doctor           # check the setup and say how to fix problems (--production before deploying)
 gemstack version
 ```
+
+## Environments
+
+Commands that load the app take `-e ENV` (or `GEMSTACK_ENV=ENV`); without it
+they use `development`:
+
+```bash
+gemstack console -e production      # IRB with the production settings and database
+gemstack console -e test
+gemstack server -e production -p 4000
+gemstack routes -e production
+gemstack db:migrate -e test         # every db:* command
+gemstack jobs -e production
+GEMSTACK_ENV=production gemstack console   # the same, through the environment variable
+```
+
+In production the console connects to the production database: changes are
+real. The environment's variables must be set, as for the server
+(`SECRET_KEY_BASE`, `DATABASE_URL`…). `gemstack dev` always runs in
+development and `gemstack test` in test; generators don't depend on an
+environment. Inside the console, `GemStack.env` shows the environment and
+`GemStack.application.reload!` reloads code.
 
 ## Generators
 
@@ -51,6 +73,10 @@ Without fields it asks for them interactively.
 gemstack g controller Reports index show export
 gemstack g controller Admin::Reports index        # namespaced: Admin::ReportsController
 ```
+
+Its actions are in the API docs and the TypeScript client right away; add
+`accepts` / `returns` for typed input and output
+([documenting custom endpoints](typescript.md#documenting-custom-endpoints)).
 
 `app/controllers/reports_controller.rb` (one method per action), a test per
 action and the routes. `index`, `show`, `create`, `update` and `destroy` get
@@ -167,5 +193,6 @@ gemstack jobs:status      # ready / scheduled / running / failed per queue
 gemstack jobs:failed      # recent failures with their errors
 gemstack jobs:retry [IDS] # put failed jobs back on the queue
 gemstack jobs:discard [IDS]
-gemstack contract         # regenerate TypeScript types, API clients and openapi.json
+gemstack contract         # regenerate TypeScript types, API clients and openapi.json for every route
+                          # (custom controllers too: docs/typescript.md#documenting-custom-endpoints)
 ```

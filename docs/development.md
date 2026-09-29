@@ -62,7 +62,8 @@ sends the request from the page — with your session cookie, so sign in through
 the app first to call protected endpoints.
 
 The page is built from the live routes on every load (no `gemstack contract`
-needed) and is self-contained: no CDN, no external requests. The OpenAPI
+needed) — custom controllers included; declare `accepts` and `returns` so
+their types show ([documenting custom endpoints](typescript.md#documenting-custom-endpoints)) — and is self-contained: no CDN, no external requests. The OpenAPI
 document behind it is at `/api/docs/openapi.json`; `gemstack contract` also
 writes it to `openapi.json` for other tools.
 

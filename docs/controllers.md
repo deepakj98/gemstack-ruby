@@ -152,8 +152,15 @@ end
 ```
 
 `per_page` defaults to `config.http.pagination.per_page` (25) and is capped at
-`max_per_page` (100); invalid values are a 422. Order the dataset so pages
-are stable. Arrays work too.
+`max_per_page` (100); `paginate(scope, per_page: 10)` changes the default for
+one action. Invalid values are a 422. Order the dataset so pages are stable.
+Arrays work too. Everything about pagination — settings, the frontend hooks,
+large tables: [pagination](pagination.md).
+
+Custom actions appear in `openapi.json`, the TypeScript client and
+`/api/docs` like generated ones; declare `accepts` and `returns` so their
+input and response are typed — see [documenting custom
+endpoints](typescript.md#documenting-custom-endpoints).
 
 ## HTTP caching
 

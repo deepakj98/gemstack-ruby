@@ -116,7 +116,7 @@ server database ([databases](docs/database.md)).
 
 ```bash
 gem install gemstack
-gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.3"
+gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.4"
 ```
 
 The `gemstack` gem is the framework: it brings every module an app needs
@@ -183,7 +183,7 @@ bundle exec rake bench
 [Deployment](docs/deployment.md) ·
 [Resource generation](docs/resource-generation.md)
 
-[Commands](docs/cli.md) · [Databases](docs/database.md) · [Models](docs/models.md) · [Validation](docs/validation.md) ·
+[Commands](docs/cli.md) · [Databases](docs/database.md) · [Models](docs/models.md) · [Pagination](docs/pagination.md) · [Validation](docs/validation.md) ·
 [Serialization](docs/serialization.md) · [Caching](docs/caching.md) ·
 [Background jobs](docs/background-jobs.md) · [Realtime](docs/realtime.md) ·
 [Authentication](docs/authentication.md) · [Authorization](docs/authorization.md) ·

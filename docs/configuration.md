@@ -75,7 +75,7 @@ Replace it entirely with `GemStack.logger = MyLogger.new` (it must respond to
 | `config.http.compression.encodings` | `%w[br gzip]` (Brotli needs the `brotli` gem) |
 | `config.http.compression.brotli_quality` / `gzip_level` | `4` / `4` |
 | `config.http.etags` | `true` (Rack::ETag + Rack::ConditionalGet) |
-| `config.http.pagination.per_page` / `max_per_page` | `25` / `100` |
+| `config.http.pagination.per_page` / `max_per_page` | `25` / `100` — see [pagination](pagination.md) |
 
 ### Cache (`gemstack-cache`)
 

@@ -11,10 +11,11 @@ export const <%= spec.variable %>Keys = {
 };
 <% if spec.action?(:index) -%>
 
-export function use<%= spec.plural_class %>(page = 1) {
+// perPage: records per page; omit it to use the API's default (config.http.pagination.per_page).
+export function use<%= spec.plural_class %>(page = 1, perPage?: number) {
   return useQuery({
-    queryKey: [...<%= spec.variable %>Keys.all, "page", page],
-    queryFn: () => <%= spec.client_name %>.list({ page }),
+    queryKey: [...<%= spec.variable %>Keys.all, "page", page, perPage],
+    queryFn: () => <%= spec.client_name %>.list({ page, per_page: perPage }),
     placeholderData: keepPreviousData, // keep the current page visible while the next one loads
   });
 }

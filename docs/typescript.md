@@ -66,6 +66,103 @@ assignable to the client's query record type.
 Mapping of scalar types: see [serialization](serialization.md#types-and-output-format).
 Decimals are strings so no precision is lost in JavaScript (DECISIONS D-022).
 
+## Documenting custom endpoints
+
+The contract — `openapi.json`, the TypeScript types and clients, and the
+`/api/docs` page — covers **every route** in `config/routes.rb`, not only
+generated resources. A controller written by hand or with
+`gemstack g controller` is included as soon as it has a route:
+
+```bash
+gemstack contract      # regenerate openapi.json + frontend/lib/api/generated
+```
+
+`gemstack dev` runs it for you whenever a file in `app/` or `config/routes.rb`
+changes, and `/api/docs` rebuilds on every page load.
+
+What an endpoint takes and returns comes from two declarations in the
+controller — add them to custom actions:
+
+```ruby
+# config/routes.rb
+GemStack.routes do
+  get  "/reports/sales",  to: "reports#sales"
+  post "/reports/export", to: "reports#export"
+end
+```
+
+```ruby
+# app/serializers/sales_report_serializer.rb
+class SalesReportSerializer < ApplicationSerializer
+  Report = Data.define(:from, :to, :region, :total)
+
+  attribute :from, :date
+  attribute :to, :date
+  attribute :region, :string, nullable: true
+  attribute :total, :decimal
+end
+```
+
+```ruby
+# app/controllers/reports_controller.rb
+class ReportsController < ApplicationController
+  # Input: query parameters for GET/DELETE, the JSON body for POST/PATCH/PUT.
+  accepts :sales do
+    required :from, :date
+    required :to, :date
+    optional :region, :string
+  end
+  accepts :export do
+    required :format, :string, in: %w[csv xlsx]
+  end
+
+  # Output: a serializer, [Serializer] for a list, GemStack::Page[Serializer]
+  # for a paginated list, or nil for no body (documented as 204).
+  returns :sales, SalesReportSerializer
+  returns :export, nil
+
+  def sales
+    total = Order.where(created_at: input[:from]..input[:to]).sum(:total) || 0
+    report = SalesReportSerializer::Report.new(from: input[:from], to: input[:to], region: input[:region],
+                                               total: total)
+    render report, serializer: SalesReportSerializer
+  end
+
+  def export
+    ExportReport.perform_later(input[:format])
+    head :no_content
+  end
+end
+```
+
+The result:
+
+- `openapi.json` documents `GET /api/reports/sales` with the query parameters
+  `from`, `to` (required) and `region`, and a `SalesReport` response;
+  `POST /api/reports/export` with a `ReportExportInput` body and a 204 response.
+- The TypeScript client gets typed methods —
+  `reports.sales({ from, to, region })` returns `Promise<SalesReport>`.
+- `/api/docs` lists both, with a working "Try it" form.
+
+Input types are named `<Resource><Action>Input` (`ReportSalesInput`),
+responses after the serializer (`SalesReport`).
+
+**`accepts` validates when the action reads `input`**: an invalid value is a
+`422` with field errors at that point, so read `input` (not `params`) in
+actions that declare it.
+
+**Without `returns`**, the endpoint is still documented — path, method, path
+parameters — but its response type is `unknown`, and `gemstack contract`,
+`gemstack doctor` and `/api/docs` show a warning:
+
+```text
+warning  ReportsController#summary: response type unknown (add `returns :summary, SomeSerializer`)
+```
+
+Conventions spare you `returns` for REST actions named after their resource:
+in `ProductsController`, `index` returns `[ProductSerializer]` and `show`,
+`create` and `update` return `ProductSerializer`; `destroy` has no body.
+
 ## Configuration
 
 ```ruby

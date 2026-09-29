@@ -2,6 +2,18 @@
 
 All GemStack gems are released together with one version.
 
+## 0.2.4
+
+- `docs/pagination.md`: how pagination works, changing the page size (app, action, request), the
+  frontend hooks, filtering, large tables
+- The generated `config/app.rb` lists the pagination, response, logging, database, cache, jobs and mail
+  settings with their defaults
+- Generated list hooks take an optional page size: `useProducts(page, perPage)`
+- Docs: documenting custom endpoints — `gemstack contract` and `/api/docs` cover every route; `accepts`
+  and `returns` type their input and output (`docs/typescript.md`)
+- `gemstack routes -e ENV` uses that environment (it always used development); the command reference
+  documents `-e` for the console, server, routes, db and jobs commands
+
 ## 0.2.3
 
 - **Ruby 3.3 or newer** (was 4.0): tested on Ruby 3.3, 3.4 and 4.0 (`script/ruby-matrix`)
