@@ -180,7 +180,7 @@ documented before the next begins.
   production mode behind Caddy on https://localhost — migrations, healthy API, jobs worker, Next.js,
   signup with a `__Host-` Secure cookie, HSTS, `/api/docs` 404; `doctor --production` ran in the container.
 
-## Before 0.1.0 — databases  *(complete)*
+## 0.2.0 — databases  *(complete)*
 
 - [x] Rails-style `config/database.yml` (ERB, per environment); `DATABASE_URL` / `TEST_DATABASE_URL` override it
 - [x] SQLite (default for `gemstack new`), PostgreSQL, MySQL 8 via `mysql2` or `trilogy`; `--database=`

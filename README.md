@@ -111,7 +111,7 @@ server database ([databases](docs/database.md)).
 
 ```bash
 gem install gemstack
-gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.1.0"
+gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.0"
 ```
 
 The `gemstack` gem is the framework: it brings every module an app needs
