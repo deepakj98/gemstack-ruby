@@ -50,4 +50,3 @@ git tag -a "v$VERSION" -m "GemStack $VERSION" 2>/dev/null || echo "tag v$VERSION
 echo
 echo "Published GemStack $VERSION. Next:"
 echo "  git push origin v$VERSION     # the release tag"
-echo "  script/split                  # update the per-gem mirrors"

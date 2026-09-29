@@ -1,11 +1,10 @@
 # Releasing GemStack
 
-Development happens in this repository (`gemstack-rb/gemstack`). Each gem in
-`gems/` is published to rubygems.org as a separate gem and mirrored into its
-own read-only repository `gemstack-rb/<gem>` (DECISIONS D-061). All gems share
-one version.
+Everything lives in one repository, `gemstack-rb/gemstack`. Each gem in
+`gems/` is published from it to rubygems.org as a separate gem (DECISIONS
+D-061). All gems share one version.
 
-> ⚠️ **Public publication.** GitHub repositories created here are public, and a
+> ⚠️ **Public publication.** The GitHub repository is public, and a
 > gem pushed to rubygems.org is public and permanent: a version can be yanked
 > but never re-used, and it stays mirrored and cached. Before every release,
 > make sure nothing sensitive is included — no `.env` files, keys, passwords or
@@ -32,30 +31,14 @@ gh auth setup-git      # lets `git push` over HTTPS use that login
 gh auth status
 ```
 
-Create the repositories — the monorepo and one mirror per gem (13), all public;
-mirrors have issues and the wiki disabled:
+Create the (public) repository and push:
 
 ```bash
-DRY_RUN=1 script/create-repos   # see what it will do
-script/create-repos
-```
-
-Push the monorepo:
-
-```bash
+gh repo create gemstack-rb/gemstack --public \
+  --description "GemStack: a fast, modular Ruby API framework for Next.js"
 git remote add origin https://github.com/gemstack-rb/gemstack.git
 git push -u origin main
 ```
-
-Then fill the mirrors (each gets that gem's directory with its own history):
-
-```bash
-DRY_RUN=1 script/split
-script/split
-```
-
-Consider making each mirror's description point to the monorepo (the script
-does) and archiving nothing — mirrors are updated on every release.
 
 ### rubygems.org
 
@@ -85,7 +68,6 @@ git commit -am "Release 0.2.0" && git push
 
 script/release 0.2.0                    # tests, rake gems:check, then gem push ×14 (asks for MFA codes)
 git push origin v0.2.0
-script/split                            # update the mirrors
 ```
 
 `script/release` refuses to run unless you're on `main`, the tree is clean and
