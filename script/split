@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Mirrors each gem's directory — with its own history — into its read-only
+# repository: gems/gemstack-http → github.com/gemstack-rb/gemstack-http. The
+# monorepo stays the source of truth (DECISIONS D-061), and is itself the home
+# of the `gemstack` umbrella gem, so that one has no mirror.
+#
+#   script/split                  # every gem
+#   script/split gemstack-http    # one gem
+#   DRY_RUN=1 script/split        # split locally, push nothing
+#
+# GEMSTACK_MIRROR_URL (printf format, %s = gem name) defaults to HTTPS, which
+# works after `gh auth setup-git`; for SSH: git@github.com:gemstack-rb/%s.git
+set -euo pipefail
+cd "$(dirname "$0")/.."
+URL_FORMAT="${GEMSTACK_MIRROR_URL:-https://github.com/${GEMSTACK_OWNER:-gemstack-rb}/%s.git}"
+[ -z "$(git status --porcelain)" ] || { echo "Commit or stash your changes first."; exit 1; }
+if [ $# -gt 0 ]; then gems="$*"; else gems=$(script/gems | grep -vx gemstack); fi
+
+for gem in $gems; do
+  [ "$gem" != "gemstack" ] || { echo "gemstack lives in the monorepo itself — nothing to mirror"; continue; }
+  [ -d "gems/$gem" ] || { echo "no gems/$gem"; exit 1; }
+  sha=$(git subtree split -q --prefix="gems/$gem")
+  url=$(printf "$URL_FORMAT" "$gem")
+  if [ -n "${DRY_RUN:-}" ]; then
+    echo "$gem  $sha  → $url (dry run)"
+  else
+    echo "== $gem → $url"
+    git push "$url" "$sha:refs/heads/main"
+  fi
+done

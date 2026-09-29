@@ -64,3 +64,34 @@ task :bench do
 end
 
 task default: %i[test lint]
+
+desc "Set the version of every GemStack gem: rake version:set[0.2.0]"
+task "version:set", [:version] do |_, args|
+  version = args[:version].to_s
+  abort "usage: rake version:set[x.y.z]" unless version.match?(/\A\d+\.\d+\.\d+(\.[0-9A-Za-z.]+)?\z/)
+
+  files = Dir["gems/*/*.gemspec"] + ["gems/gemstack-core/lib/gemstack/version.rb"]
+  files.each do |file|
+    content = File.read(file)
+    updated = content.sub(/^(\s*(?:VERSION|version) = )"[^"]+"/, "\\1\"#{version}\"")
+    File.write(file, updated) unless updated == content
+  end
+  puts "Set #{files.size} files to #{version}. Add a CHANGELOG.md entry, then run `bundle install` and the tests."
+end
+
+namespace :gems do
+  desc "Build every gem and install them into a throwaway GEM_HOME, then run `gemstack new` from them"
+  task check: :build do
+    require "tmpdir"
+    Dir.mktmpdir("gemstack-gems") do |home|
+      env = { "GEM_HOME" => home, "GEM_PATH" => home, "BUNDLE_GEMFILE" => nil, "RUBYOPT" => nil }
+      gems = INSTALL_ORDER.map { |name| "pkg/#{name}-#{GemStack::VERSION}.gem" }
+      Bundler.with_unbundled_env do
+        sh env, "gem", "install", "--no-document", "--quiet", *gems
+        sh env, File.join(home, "bin", "gemstack"), "version"
+        sh env, File.join(home, "bin", "gemstack"), "new", File.join(home, "check_app"), "--skip-install", "--skip-git"
+      end
+      puts "All #{gems.size} gems build, install and generate an app."
+    end
+  end
+end

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Prints the GemStack gems in dependency order (INSTALL_ORDER in the Rakefile).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+ruby -e 'puts File.read("Rakefile")[/INSTALL_ORDER = %w\[(.*?)\]/m, 1].split'
