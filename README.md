@@ -121,7 +121,7 @@ Optional modules are separate gems added per app — `gemstack-db` and
 version.
 
 **Hacking on GemStack itself?** Clone this repository (every gem lives in
-`gems/`; the per-gem repositories are read-only mirrors). `bin/gemstack` runs
+`gems/` and is published from here). `bin/gemstack` runs
 the CLI straight from the checkout, and apps it creates point their Gemfile at
 the checkout (`path "…/gems"`), so framework changes apply immediately.
 `bundle exec rake gems:install` installs the checkout's gems as if released.

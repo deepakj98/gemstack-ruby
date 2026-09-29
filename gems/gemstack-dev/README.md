@@ -16,8 +16,8 @@ Installed with the `gemstack` gem; you rarely need to add it yourself.
 - [All guides](https://github.com/gemstack-rb/gemstack/tree/main/docs) ·
   [Architecture](https://github.com/gemstack-rb/gemstack/blob/main/ARCHITECTURE.md)
 
-Issues and pull requests: [gemstack-rb/gemstack](https://github.com/gemstack-rb/gemstack) (this gem lives in
-`gems/gemstack-dev` there; any separate `gemstack-dev` repository is a read-only mirror).
+Source, issues and pull requests: [gemstack-rb/gemstack](https://github.com/gemstack-rb/gemstack)
+(this gem lives in `gems/gemstack-dev`).
 
 ## License
 

@@ -801,33 +801,32 @@ several frontends share one backend.
 - **Docs page rendering**: nested child arrays weren't flattened, which only a
   real browser (headless Chrome screenshot) showed.
 
-## D-061 Publishing: one monorepo, per-gem mirrors, one version
+## D-061 Publishing: one repository, fourteen gems, one version
 
-**Decision.** Development stays in `gemstack-rb/gemstack` (this repository).
-Each gem except the umbrella is mirrored, with its own history, into a
-read-only repository `gemstack-rb/<gem>` by `script/split` (`git subtree
-split`); each is published to rubygems.org as a separate gem. All gems share
-one version, set with `rake version:set[x.y.z]`, and depend on each other with
-exact pins, so there is no compatibility matrix. The `gemstack` gem depends on
-the modules every app needs; database, jobs, realtime, mail, storage and auth
-stay opt-in (D-003's layering unchanged).
+**Decision.** Everything lives in `gemstack-rb/gemstack`. Each directory in
+`gems/` is published from it to rubygems.org as a separate gem by
+`script/release`, in dependency order. All gems share one version, set with
+`rake version:set[x.y.z]`, and depend on each other with exact pins, so there
+is no compatibility matrix. The `gemstack` gem depends on the modules every
+app needs; database, jobs, realtime, mail, storage and auth stay opt-in
+(D-003's layering unchanged).
 
-**Reasoning.** Features routinely touch several gems (Phase 6 changed core,
-db, mail, contract and cli together); in one repository that is one change,
-tested together by `rake`, the architecture test and `script/e2e`, and
-released in dependency order by one script. Separate development repositories
-would turn every such change into a sequence of coordinated pull requests and
-releases, with each repository testing against the others' last release.
-Mirrors still give every gem its own repository. Rails and aws-sdk-ruby work
-the same way.
+**Reasoning.** rubygems.org doesn't care where code lives, so separate gems
+don't need separate repositories. Features routinely touch several gems
+(Phase 6 changed core, db, mail, contract and cli together); in one repository
+that is one change, tested together by `rake`, the architecture test and
+`script/e2e`, and released by one script. Per-gem repositories — developed
+separately or as read-only mirrors — were considered and dropped: they add a
+coordination or sync step to every release and give users nothing the gem
+pages and the monorepo don't (Rails does the same).
 
-**Consequences.** Gemspecs carry their version inline (no `require_relative`
-into another gem), so a mirror builds on its own; the architecture test checks
-that every gemspec has the same version, exact internal pins, MIT license,
-MFA-required pushes and links to the monorepo. Issues and pull requests are
-disabled on mirrors and go to the monorepo. `script/release` skips versions
-already on rubygems.org, so an interrupted release is finished by running it
-again.
+**Consequences.** Every gem's metadata points to the monorepo (source,
+changelog, issues, docs). Gemspecs carry their version inline, so any gem
+directory builds on its own; the architecture test checks one version, exact
+internal pins, MIT license, MFA-required pushes and the links.
+`script/release` skips versions already on rubygems.org, so an interrupted
+release is finished by running it again. Per-gem mirrors can be added later
+(`git subtree split`) without changing any of this.
 
 ---
 
