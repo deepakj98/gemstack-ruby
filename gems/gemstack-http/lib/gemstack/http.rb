@@ -19,6 +19,7 @@ end
 
 require_relative "http/json_codec"
 require_relative "http/error_renderer"
+require_relative "http/error_page"
 require_relative "http/middleware_stack"
 require_relative "http/middleware/request_id"
 require_relative "http/middleware/request_logger"

@@ -28,6 +28,51 @@ Production defaults: JSON logs with request IDs, no exception details in
 responses, eager loading, HSTS on HTTPS requests, `.env` files not loaded
 (use real environment variables for secrets).
 
+## Docker
+
+```bash
+gemstack generate deploy
+```
+
+writes a `Dockerfile` with two targets — `api` (Ruby, Puma; the same image runs
+`gemstack jobs` and `gemstack db:migrate`) and `web` (Next.js) — plus
+`compose.yaml`, a `Caddyfile`, a `Procfile` and `.dockerignore`. Nothing is
+deployed; the files are yours to adapt.
+
+The images run as a non-root user, contain no `.env` files or secrets (all
+configuration comes from environment variables at runtime), and the API image
+has a `HEALTHCHECK` on `/api/health`.
+
+Try production mode locally — Postgres, migrations, API, jobs, Next.js and
+Caddy on **https://localhost** (Caddy's local certificate authority):
+
+```bash
+export SECRET_KEY_BASE=$(openssl rand -hex 64) POSTGRES_PASSWORD=$(openssl rand -hex 16)
+docker compose up --build
+docker compose run --rm api bundle exec gemstack doctor --production
+```
+
+With a real domain, set `SITE_ADDRESS=example.com` and Caddy fetches a Let's
+Encrypt certificate.
+
+> Apps created from a GemStack **checkout** reference it with an absolute
+> `path` in the Gemfile, which the image can't see. Run `bundle cache --all`
+> (the Dockerfile copies `vendor/`), or use released gems.
+
+### Platforms
+
+| Platform | How |
+| --- | --- |
+| **Fly.io** | `fly launch` with the Dockerfile; one app for `--target api` (`[processes] app = "bundle exec puma -C config/puma.rb"`, `worker = "bundle exec gemstack jobs"`, `release_command = "bundle exec gemstack db:migrate"`) and one for `--target web` with `GEMSTACK_API_URL` pointing at the API's private address |
+| **Render** | A *Web Service* (Docker, target `api`) with pre-deploy command `bundle exec gemstack db:migrate`, a *Background Worker* with the same image running `bundle exec gemstack jobs`, a Web Service for `web`, and Render PostgreSQL |
+| **Railway** | Services from the same repo: `api` and `worker` (Dockerfile target `api`, start commands as in the `Procfile`), `web` (target `web`), and the PostgreSQL plugin; `DATABASE_URL` is provided |
+| **Heroku / Dokku** | The `Procfile` (`release`, `web`, `worker`) for the API with the Ruby buildpack, and the frontend as a separate Node app |
+| **A VM** | `docker compose up -d` with `SITE_ADDRESS` set, or systemd units for Puma, `gemstack jobs` and `npm start` behind Caddy/nginx |
+
+On platforms that proxy `/api` through Next.js (no Caddy), build the `web`
+image with `--build-arg GEMSTACK_API_URL=http://api.internal:4000`: rewrites are
+fixed at build time (see below).
+
 ## Choose how `/api` reaches Ruby
 
 The browser always calls same-origin `/api/...`, so pick one:
@@ -77,6 +122,8 @@ config.http.cors.origins = ["https://example.com"]
 and build the frontend with `NEXT_PUBLIC_GEMSTACK_API_URL=https://api.example.com`.
 
 ## Checklist
+
+- Run `gemstack doctor --production` with the production environment variables.
 
 - `GEMSTACK_ENV=production` and `DATABASE_URL` for the API; `db:migrate` on release.
 - PostgreSQL connections: `WEB_CONCURRENCY × GEMSTACK_MAX_THREADS` per host (pool per worker).

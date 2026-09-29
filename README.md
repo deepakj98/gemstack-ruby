@@ -23,7 +23,7 @@ gemstack dev          # → http://localhost:3000
          Next.js           /api/*  → Ruby (Rack + Puma)
 ```
 
-> **Status: Phases 1–6 complete — see [ROADMAP.md](ROADMAP.md).**
+> **Status: Phases 1–7 complete — see [ROADMAP.md](ROADMAP.md).**
 > Built: HTTP layer, router, middleware, controllers, single-origin dev server,
 > Next.js + TypeScript template, PostgreSQL models (Sequel), migrations,
 > validation, serializers, TypeScript/OpenAPI contract, `generate resource`.
@@ -32,7 +32,7 @@ gemstack dev          # → http://localhost:3000
 > Phase 5: realtime — `GemStack.broadcast` → Server-Sent Events, PostgreSQL fan-out, `useRealtime`.
 > Phase 6: `gemstack add auth` (Argon2id, cookie sessions + API tokens, reset/verification emails,
 > Next.js pages), policies, mail, `gemstack add storage` (direct uploads to disk/S3).
-> Next: developer experience (Phase 7).
+> Phase 7: dev error pages, `/api/docs`, `gemstack doctor`, `gemstack generate deploy` (Docker, Caddy, Procfile).
 
 ## Why
 
@@ -185,7 +185,7 @@ bundle exec rake bench
 [Serialization](docs/serialization.md) · [Caching](docs/caching.md) ·
 [Background jobs](docs/background-jobs.md) · [Realtime](docs/realtime.md) ·
 [Authentication](docs/authentication.md) · [Authorization](docs/authorization.md) ·
-[Mail](docs/mail.md) · [Storage](docs/storage.md)
+[Mail](docs/mail.md) · [Storage](docs/storage.md) · [Development tools](docs/development.md)
 
 ## License
 

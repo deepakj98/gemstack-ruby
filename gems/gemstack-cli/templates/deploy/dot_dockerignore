@@ -1,0 +1,14 @@
+# Kept out of the build context (and so out of images).
+.git
+.env
+.env.*
+!.env.example
+tmp/
+log/
+storage/
+coverage/
+node_modules/
+frontend/node_modules/
+frontend/.next/
+**/*.pem
+**/*.key

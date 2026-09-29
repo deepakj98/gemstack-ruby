@@ -15,6 +15,8 @@ module GemStack
     require_relative "cli/migration_generator"
     require_relative "cli/job_generator"
     require_relative "cli/policy_generator"
+    require_relative "cli/doctor"
+    require_relative "cli/deploy_generator"
     require_relative "cli/add_generator"
     require_relative "cli/commands/db"
     require_relative "cli/commands/jobs"
@@ -34,7 +36,7 @@ module GemStack
       def basename = "gemstack"
     end
 
-    GENERATORS = "resource, model, migration, controller, job, policy"
+    GENERATORS = "resource, model, migration, controller, job, policy, deploy"
 
     map %w[-v --version] => :version
     map "s" => :server
@@ -117,7 +119,7 @@ module GemStack
     end
 
     desc "generate GENERATOR NAME [ARGS]",
-         "Generate code (alias: g). Generators: resource, model, migration, controller, job, policy"
+         "Generate code (alias: g). Generators: resource, model, migration, controller, job, policy, deploy"
     long_desc <<~DESC
       gemstack generate resource Product name:string price:decimal description:text:optional active:boolean
         Full vertical slice: migration, model, serializer, controller, routes, tests,
@@ -140,6 +142,9 @@ module GemStack
       gemstack generate policy Order
         app/policies/order_policy.rb + test (needs gemstack add auth)
 
+      gemstack generate deploy
+        Dockerfile (api + web images), compose.yaml, Caddyfile, Procfile, .dockerignore
+
       Field syntax: name:type[:optional][:unique][:index]. Types: #{ResourceSpec::TYPES.join(", ")}.
       Fields are required unless marked :optional.
     DESC
@@ -156,18 +161,16 @@ module GemStack
       when "controller"
         abort("Usage: gemstack generate controller NAME [ACTIONS...]") unless name
         ControllerGenerator.new(name, args, root: root, force: options[:force]).run
-      when "model"
-        abort("Usage: gemstack generate model NAME field:type ...") unless name && !args.empty?
-        spec = ResourceSpec.new(name, args)
-        ResourceGenerator.new(spec, root: root, parts: %i[migration model serializer], tests: !options[:skip_tests],
-                                    force: options[:force]).run
-        say("\nNext: gemstack db:migrate")
+      when "model" then generate_model(root, name, args)
       when "resource" then generate_resource(root, name, args)
       when "migration"
         abort("Usage: gemstack generate migration NAME [field:type ...]") unless name
         MigrationGenerator.new(name, args, root: root).run
       when "job" then generate_job(root, name, args)
       when "policy" then generate_policy(root, name)
+      when "deploy"
+        DeployGenerator.new(root: root, force: options[:force]).run
+        say("\nNext: docker compose up --build (see compose.yaml) · recipes: docs/deployment.md")
       when nil then abort("Usage: gemstack generate GENERATOR NAME. Generators: #{GENERATORS}")
       else abort("Unknown generator #{generator.inspect}. Available: #{GENERATORS}")
       end
@@ -205,12 +208,32 @@ module GemStack
                    "— see docs/storage.md"
     }.freeze
 
+    desc "doctor", "Check that this app can run (Ruby, Node, database, migrations, contract…) and how to fix it"
+    long_desc <<~DESC
+      gemstack doctor               checks for development
+      gemstack doctor --production  also checks the settings a deploy needs (run it with the production
+                                    environment variables: SECRET_KEY_BASE, DATABASE_URL, SMTP_URL…)
+    DESC
+    method_option :production, type: :boolean, default: false
+    def doctor
+      root = Project.ensure_bundle!(self.class.argv)
+      exit(1) unless Doctor.new(root: root, production: options[:production]).run.ok?
+    end
+
     desc "version", "Print the GemStack version"
     def version
       say("GemStack #{GemStack::VERSION}")
     end
 
     no_commands do
+      def generate_model(root, name, args)
+        abort("Usage: gemstack generate model NAME field:type ...") unless name && !args.empty?
+        spec = ResourceSpec.new(name, args)
+        ResourceGenerator.new(spec, root: root, parts: %i[migration model serializer], tests: !options[:skip_tests],
+                                    force: options[:force]).run
+        say("\nNext: gemstack db:migrate")
+      end
+
       def generate_job(root, name, args)
         abort("Usage: gemstack generate job NAME [QUEUE]") unless name
         JobGenerator.new(name, queue: args.first, root: root, force: options[:force]).run

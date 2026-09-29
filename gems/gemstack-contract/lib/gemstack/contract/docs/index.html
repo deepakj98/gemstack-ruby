@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__ API · GemStack</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #16181d; --muted: #5b6170; --panel: #f4f5f8; --line: #e3e5ea;
+    --get: #1f7a4d; --post: #2b59c3; --patch: #9a6700; --put: #7a3fb0; --delete: #c53030; --focus: #2b59c3; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0f1115; --fg: #e6e8ee; --muted: #9aa0ad; --panel: #181c26;
+    --line: #262b38; --get: #4cc38a; --post: #7ea2ff; --patch: #e0b44c; --put: #c49bf0; --delete: #ff7b7b; --focus: #7ea2ff; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; display: flex; gap: 1rem; align-items: center; padding: .7rem 1rem;
+    background: var(--bg); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 1.05rem; margin: 0; } header .muted { font-size: .85rem; }
+  header input { flex: 1; min-width: 10rem; max-width: 24rem; }
+  .layout { display: grid; grid-template-columns: 15rem minmax(0, 1fr); }
+  nav { position: sticky; top: 3.3rem; align-self: start; max-height: calc(100vh - 3.3rem); overflow-y: auto; padding: 1rem;
+    border-right: 1px solid var(--line); font-size: .9rem; }
+  nav h2 { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 1rem 0 .3rem; }
+  nav a { display: flex; gap: .4rem; padding: .15rem 0; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+  nav a:hover { text-decoration: underline; }
+  main { padding: 1rem 1.5rem 4rem; min-width: 0; }
+  section.op { border: 1px solid var(--line); border-radius: 10px; margin: 0 0 1rem; overflow: hidden; }
+  section.op > summary { list-style: none; } details > summary::-webkit-details-marker { display: none; }
+  summary { display: flex; gap: .7rem; align-items: center; padding: .6rem .9rem; cursor: pointer; flex-wrap: wrap; }
+  summary code { font-size: .95rem; overflow-wrap: anywhere; }
+  .body { padding: .2rem 1rem 1rem; border-top: 1px solid var(--line); }
+  .verb { font: 700 .72rem/1 ui-monospace, Menlo, monospace; padding: .3rem .45rem; border-radius: 5px; color: #fff; min-width: 3.9rem; text-align: center; }
+  .GET { background: var(--get); } .POST { background: var(--post); } .PATCH { background: var(--patch); }
+  .PUT { background: var(--put); } .DELETE { background: var(--delete); }
+  nav .verb { min-width: 3.2rem; font-size: .62rem; padding: .22rem .3rem; }
+  h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 1rem 0 .35rem; }
+  pre, textarea, input, select, button { font: 13px/1.5 ui-monospace, Menlo, monospace; }
+  pre { background: var(--panel); border-radius: 8px; padding: .7rem .9rem; margin: 0; overflow-x: auto; white-space: pre; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; } td, th { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  input, textarea, select { width: 100%; padding: .4rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+  input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  textarea { min-height: 7rem; resize: vertical; }
+  button { padding: .45rem .9rem; border-radius: 6px; border: 1px solid var(--fg); background: var(--fg); color: var(--bg); cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  .row { display: flex; gap: .6rem; align-items: center; margin-top: .6rem; flex-wrap: wrap; }
+  .muted { color: var(--muted); } .warn { border-left: 3px solid var(--patch); padding: .4rem .8rem; background: var(--panel); border-radius: 4px; margin: 0 0 1rem; font-size: .9rem; }
+  a.ref { color: var(--focus); }
+  .status { font-weight: 700; } .ok { color: var(--get); } .bad { color: var(--delete); }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } nav { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); } main { padding: 1rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>__TITLE__ API</h1>
+  <input id="filter" type="search" placeholder="Filter endpoints…" aria-label="Filter endpoints">
+  <span class="muted">Development only · <a class="ref" href="__OPENAPI_URL__">openapi.json</a></span>
+</header>
+<div class="layout">
+  <nav id="nav" aria-label="Endpoints"></nav>
+  <main id="main"><p class="muted">Loading…</p></main>
+</div>
+<script>
+"use strict";
+const OPENAPI_URL = "__OPENAPI_URL__";
+const VERBS = ["get", "post", "put", "patch", "delete"];
+let doc;
+
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (value === undefined || value === null || value === false) continue;
+    if (key === "class") node.className = value;
+    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value === true ? "" : value);
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child === null || child === undefined || child === false) continue;
+    node.append(child instanceof Node ? child : String(child));
+  }
+  return node;
+}
+
+const refName = (ref) => ref.split("/").pop();
+const resolve = (schema) => (schema && schema.$ref ? doc.components.schemas[refName(schema.$ref)] : schema);
+
+// JSON Schema → a TypeScript-like description (matches the generated client types).
+function typeText(schema, indent = "") {
+  if (!schema) return "unknown";
+  if (schema.$ref) return refName(schema.$ref);
+  const variants = schema.anyOf || schema.oneOf;
+  if (variants) return variants.map((s) => typeText(s, indent)).join(" | ");
+  if (schema.enum) return schema.enum.map((v) => JSON.stringify(v)).join(" | ");
+  const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+  const nullable = types.includes("null");
+  const type = types.find((t) => t !== "null");
+  let text;
+  if (type === "array") text = `${wrap(typeText(schema.items, indent))}[]`;
+  else if (type === "object" && schema.properties) {
+    const required = new Set(schema.required || []);
+    const inner = indent + "  ";
+    const lines = Object.entries(schema.properties).map(
+      ([name, prop]) => `${inner}${name}${required.has(name) ? "" : "?"}: ${typeText(prop, inner)};`,
+    );
+    text = `{\n${lines.join("\n")}\n${indent}}`;
+  } else if (type === "object") text = schema.additionalProperties ? `Record<string, ${typeText(schema.additionalProperties, indent)}>` : "Record<string, unknown>";
+  else if (type === "integer" || type === "number") text = "number";
+  else if (type === "string") text = schema.format ? `string /* ${schema.format} */` : "string";
+  else text = type || "unknown";
+  return nullable ? `${text} | null` : text;
+}
+const wrap = (t) => (t.includes("|") ? `(${t})` : t);
+
+function example(schema, depth = 0) {
+  schema = resolve(schema);
+  if (!schema || depth > 4) return null;
+  if (schema.example !== undefined) return schema.example;
+  if (schema.enum) return schema.enum[0];
+  if (schema.anyOf || schema.oneOf) return example((schema.anyOf || schema.oneOf)[0], depth + 1);
+  const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+  const type = types.find((t) => t !== "null");
+  if (type === "object") {
+    const out = {};
+    for (const [name, prop] of Object.entries(schema.properties || {})) out[name] = example(prop, depth + 1);
+    return out;
+  }
+  if (type === "array") return [example(schema.items, depth + 1)];
+  if (type === "integer" || type === "number") return 0;
+  if (type === "boolean") return false;
+  if (type === "string") return { "date-time": new Date().toISOString(), date: new Date().toISOString().slice(0, 10), uuid: crypto.randomUUID() }[schema.format] || "";
+  return null;
+}
+
+// Types mentioned by a schema, linked below the signature.
+function refsIn(schema, found = new Set()) {
+  if (!schema || typeof schema !== "object") return found;
+  if (schema.$ref) {
+    const name = refName(schema.$ref);
+    if (!found.has(name)) { found.add(name); refsIn(doc.components.schemas[name], found); }
+    return found;
+  }
+  for (const value of Object.values(schema)) if (typeof value === "object") refsIn(value, found);
+  return found;
+}
+
+function schemaBlock(schema) {
+  const refs = [...refsIn(schema)].filter((name) => name !== "Error");
+  return [
+    el("pre", {}, typeText(schema)),
+    refs.length ? el("p", { class: "muted" }, "Types: ", refs.flatMap((name, i) => [i ? ", " : "", el("a", { class: "ref", href: `#type-${name}` }, name)])) : null,
+  ];
+}
+
+function operationSection(path, verb, op) {
+  const method = verb.toUpperCase();
+  const id = `op-${op.operationId || method + path}`.replace(/[^\w.-]/g, "-");
+  const params = op.parameters || [];
+  const bodySchema = op.requestBody?.content?.["application/json"]?.schema;
+  const [status, response] = Object.entries(op.responses || {}).find(([code]) => code !== "default") || [];
+  const responseSchema = response?.content?.["application/json"]?.schema;
+
+  const inputs = {};
+  const paramRows = params.map((p) => {
+    inputs[p.name] = el("input", { name: p.name, placeholder: p.required ? "required" : "optional", "aria-label": p.name });
+    return el("tr", {}, el("td", {}, el("code", {}, p.name)), el("td", {}, p.in), el("td", {}, typeText(p.schema)), el("td", {}, inputs[p.name]));
+  });
+  const bodyInput = bodySchema ? el("textarea", { "aria-label": "Request body (JSON)", spellcheck: "false" }, JSON.stringify(example(bodySchema), null, 2)) : null;
+  const output = el("div");
+  const send = el("button", { type: "button" }, "Send request");
+  send.addEventListener("click", async () => {
+    send.disabled = true;
+    output.replaceChildren(el("p", { class: "muted" }, "Sending…"));
+    try {
+      let url = path;
+      const query = new URLSearchParams();
+      for (const p of params) {
+        const value = inputs[p.name].value;
+        if (p.in === "path") url = url.replace(`{${p.name}}`, encodeURIComponent(value));
+        else if (p.in === "query" && value !== "") query.append(p.name, value);
+      }
+      if (query.toString()) url += `?${query}`;
+      const init = { method, headers: { accept: "application/json" }, credentials: "same-origin" };
+      if (bodyInput) {
+        JSON.parse(bodyInput.value || "null"); // fail early on invalid JSON
+        init.body = bodyInput.value;
+        init.headers["content-type"] = "application/json";
+      }
+      const started = performance.now();
+      const res = await fetch(url, init);
+      const ms = Math.round(performance.now() - started);
+      const text = await res.text();
+      let shown = text;
+      try { shown = JSON.stringify(JSON.parse(text), null, 2); } catch { /* not JSON */ }
+      output.replaceChildren(
+        el("p", {}, el("span", { class: `status ${res.ok ? "ok" : "bad"}` }, `${res.status} ${res.statusText}`), el("span", { class: "muted" }, ` · ${ms} ms · ${method} ${url}`)),
+        text ? el("pre", {}, shown) : el("p", { class: "muted" }, "(no body)"),
+      );
+    } catch (error) {
+      output.replaceChildren(el("p", { class: "bad" }, String(error.message || error)));
+    } finally {
+      send.disabled = false;
+    }
+  });
+
+  return el("details", { class: "op", id, "data-search": `${method} ${path} ${op.operationId || ""}`.toLowerCase() },
+    el("summary", {}, el("span", { class: `verb ${method}` }, method), el("code", {}, path), el("span", { class: "muted" }, op.operationId || "")),
+    el("div", { class: "body" },
+      params.length ? [el("h3", {}, "Parameters"), el("table", {}, el("tr", {}, el("th", {}, "Name"), el("th", {}, "In"), el("th", {}, "Type"), el("th", {}, "Value")), paramRows)] : null,
+      bodySchema ? [el("h3", {}, "Request body"), schemaBlock(bodySchema)] : null,
+      el("h3", {}, `Response ${status || ""}`), responseSchema ? schemaBlock(responseSchema) : el("p", { class: "muted" }, "No body"),
+      el("h3", {}, "Try it"),
+      el("p", { class: "muted" }, "Sent from this page with your session cookie (sign in through the app first for protected endpoints)."),
+      bodyInput, el("div", { class: "row" }, send), output,
+    ),
+  );
+}
+
+function render() {
+  const main = document.getElementById("main");
+  const nav = document.getElementById("nav");
+  const groups = new Map();
+  for (const [path, item] of Object.entries(doc.paths || {})) {
+    for (const verb of VERBS) {
+      const op = item[verb];
+      if (!op) continue;
+      const tag = (op.tags && op.tags[0]) || "other";
+      if (!groups.has(tag)) groups.set(tag, []);
+      groups.get(tag).push({ path, verb, op });
+    }
+  }
+  const content = [];
+  const warnings = doc["x-gemstack-warnings"] || [];
+  if (warnings.length) content.push(el("div", { class: "warn" }, el("strong", {}, "Contract warnings"), el("ul", {}, warnings.map((w) => el("li", {}, w)))));
+  const navItems = [];
+  for (const [tag, ops] of [...groups.entries()].sort()) {
+    content.push(el("h2", { id: `tag-${tag}` }, tag));
+    navItems.push(el("h2", {}, tag));
+    for (const { path, verb, op } of ops) {
+      const section = operationSection(path, verb, op);
+      content.push(section);
+      navItems.push(el("a", { href: `#${section.id}`, "data-search": section.dataset.search, onclick: () => (section.open = true) },
+        el("span", { class: `verb ${verb.toUpperCase()}` }, verb.toUpperCase()), path));
+    }
+  }
+  const schemas = Object.entries(doc.components?.schemas || {}).sort(([a], [b]) => a.localeCompare(b));
+  content.push(el("h2", { id: "types" }, "Types"));
+  for (const [name, schema] of schemas) content.push(el("div", { id: `type-${name}` }, el("h3", {}, name), el("pre", {}, typeText(schema))));
+  if (!groups.size) content.unshift(el("p", { class: "muted" }, "No routes yet. Add some in config/routes.rb — this page rebuilds on every load."));
+  main.replaceChildren(...content);
+  nav.replaceChildren(...navItems, el("h2", {}, el("a", { href: "#types" }, "Types")));
+  const hash = decodeURIComponent(location.hash.slice(1));
+  if (hash) { const target = document.getElementById(hash); if (target) { if (target.tagName === "DETAILS") target.open = true; target.scrollIntoView(); } }
+}
+
+document.getElementById("filter").addEventListener("input", (event) => {
+  const q = event.target.value.trim().toLowerCase();
+  for (const node of document.querySelectorAll("[data-search]")) node.hidden = q !== "" && !node.dataset.search.includes(q);
+});
+
+fetch(OPENAPI_URL, { headers: { accept: "application/json" } })
+  .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status} loading ${OPENAPI_URL}`))))
+  .then((json) => { doc = json; render(); })
+  .catch((error) => document.getElementById("main").replaceChildren(el("p", { class: "bad" }, String(error.message || error))));
+</script>
+</body>
+</html>

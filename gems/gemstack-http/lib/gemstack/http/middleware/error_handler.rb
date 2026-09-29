@@ -17,8 +17,11 @@ module GemStack
           @app.call(env)
         rescue StandardError, ScriptError => e # ScriptError: syntax errors while reloading in development
           response = ErrorRenderer.render(e, request_id: env[REQUEST_ID], show_exceptions: @show_exceptions)
-          report(e, env) if response[0] >= 500
-          response
+          return response if response[0] < 500
+
+          report(e, env)
+          # Development: a browser opening the URL gets a readable page (DECISIONS D-055).
+          @show_exceptions && ErrorPage.browser?(env) ? ErrorPage.render(e, env, request_id: env[REQUEST_ID]) : response
         end
 
         private

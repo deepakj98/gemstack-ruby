@@ -34,7 +34,13 @@ namespace :gems do
 
   desc "Build and install every gem for the current Ruby (like `gem install gemstack`)"
   task install: :build do
-    INSTALL_ORDER.each { |name| sh "gem install pkg/#{name}-#{GemStack::VERSION}.gem --no-document" }
+    INSTALL_ORDER.each do |name|
+      file = "#{name}-#{GemStack::VERSION}.gem"
+      sh "gem install pkg/#{file} --no-document"
+      # Reinstalling the same version keeps RubyGems' cached .gem, which
+      # `bundle cache` (vendor/cache for Docker builds) would then copy.
+      cp "pkg/#{file}", File.join(Gem.dir, "cache", file)
+    end
     sh "asdf reshim ruby" if system("which asdf > /dev/null 2>&1")
   end
 

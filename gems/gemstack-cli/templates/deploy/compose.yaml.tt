@@ -1,0 +1,80 @@
+# Runs <%= app_name %> in production mode on this machine, behind Caddy on https://localhost:
+#
+#   export SECRET_KEY_BASE=$(openssl rand -hex 64) POSTGRES_PASSWORD=$(openssl rand -hex 16)
+#   docker compose up --build
+#
+# It's also a map of what a real deploy needs: one image per process type,
+# migrations before the API starts, and a proxy sending /api to Ruby.
+name: <%= app_name.tr("_", "-") %>
+
+x-api-env: &api-env
+  GEMSTACK_ENV: production
+  SECRET_KEY_BASE: ${SECRET_KEY_BASE:?set SECRET_KEY_BASE (openssl rand -hex 64)}
+  DATABASE_URL: postgres://app:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/app
+  APP_URL: ${APP_URL:-https://localhost}
+<% if mail? -%>
+  SMTP_URL: ${SMTP_URL:-}   # e.g. smtp://user:pass@smtp.example.com:587 — emails retry until it is set
+  MAIL_FROM: ${MAIL_FROM:-}
+<% end -%>
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: app
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 2s
+      retries: 30
+
+  migrate:
+    image: <%= app_name %>-api
+    build: { context: ., target: api }
+    healthcheck: { disable: true }
+    command: ["bundle", "exec", "gemstack", "db:migrate"]
+    environment: *api-env
+    depends_on: { db: { condition: service_healthy } }
+
+  api:
+    image: <%= app_name %>-api
+    build: { context: ., target: api }
+    environment:
+      <<: *api-env
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    depends_on: { migrate: { condition: service_completed_successfully } }
+<% if jobs? -%>
+
+  jobs:
+    image: <%= app_name %>-api
+    build: { context: ., target: api }
+    healthcheck: { disable: true }
+    command: ["bundle", "exec", "gemstack", "jobs"]
+    environment: *api-env
+    depends_on: { migrate: { condition: service_completed_successfully } }
+<% end -%>
+<% if frontend? -%>
+
+  web:
+    image: <%= app_name %>-web
+    build: { context: ., target: web }
+    environment:
+      GEMSTACK_API_URL: http://api:4000 # Server Components call the API directly
+    depends_on: [api]
+<% end -%>
+
+  proxy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+    depends_on: [api<%= ", web" if frontend? %>]
+
+volumes:
+  db:
+  caddy:

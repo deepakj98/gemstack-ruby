@@ -1,0 +1,62 @@
+# syntax=docker/dockerfile:1
+# Production images for <%= app_name %> (gemstack generate deploy — docs/deployment.md).
+#
+#   docker build --target api -t <%= app_name %>-api .     # Ruby API (Puma), also runs jobs and migrations
+<% if frontend? -%>
+#   docker build --target web -t <%= app_name %>-web .     # Next.js
+<% end -%>
+#
+# Configuration comes from the environment at runtime (SECRET_KEY_BASE,
+# DATABASE_URL, …); nothing secret is baked into the images.
+
+ARG RUBY_VERSION=<%= ruby_version %>
+ARG NODE_VERSION=<%= node_version %>
+
+# ── Ruby API ────────────────────────────────────────────────────────────────
+FROM ruby:${RUBY_VERSION}-slim AS api-build
+RUN apt-get update -qq && apt-get install --no-install-recommends -y build-essential libpq-dev libyaml-dev git \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+ENV BUNDLE_DEPLOYMENT=1 BUNDLE_WITHOUT="development:test" BUNDLE_PATH=/usr/local/bundle
+COPY Gemfile Gemfile.lock ./
+COPY vendor/ ./vendor/
+RUN bundle install --jobs 4 && rm -rf /usr/local/bundle/cache "${BUNDLE_PATH}"/ruby/*/cache
+COPY . .
+RUN rm -rf frontend tmp/* log/* .env*
+
+FROM ruby:${RUBY_VERSION}-slim AS api
+RUN apt-get update -qq && apt-get install --no-install-recommends -y libpq5 libyaml-0-2 curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 1000 app && useradd --system --uid 1000 --gid app --create-home app
+WORKDIR /app
+ENV GEMSTACK_ENV=production BUNDLE_DEPLOYMENT=1 BUNDLE_WITHOUT="development:test" BUNDLE_PATH=/usr/local/bundle \
+    GEMSTACK_API_HOST=0.0.0.0 GEMSTACK_API_PORT=4000
+COPY --from=api-build /usr/local/bundle /usr/local/bundle
+COPY --from=api-build --chown=app:app /app /app
+USER app
+EXPOSE 4000
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s CMD curl -fsS http://127.0.0.1:4000/api/health || exit 1
+# Other processes use the same image: `bundle exec gemstack jobs`, `bundle exec gemstack db:migrate`.
+CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+<% if frontend? -%>
+
+# ── Next.js ─────────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-slim AS web-build
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+ENV NEXT_TELEMETRY_DISABLED=1
+# GEMSTACK_API_URL is only needed here when Next.js proxies /api itself (no reverse proxy in front).
+ARG GEMSTACK_API_URL
+ENV GEMSTACK_API_URL=${GEMSTACK_API_URL}
+RUN npm run build && npm prune --omit=dev
+
+FROM node:${NODE_VERSION}-slim AS web
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
+COPY --from=web-build --chown=node:node /app ./
+USER node
+EXPOSE 3000
+CMD ["npm", "start"]
+<% end -%>

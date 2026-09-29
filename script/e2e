@@ -90,6 +90,13 @@ step "migrate + Ruby tests"
 bin/gemstack db:migrate
 bin/gemstack test
 
+step "doctor + deploy files"
+bin/gemstack doctor
+bin/gemstack g deploy
+if command -v docker > /dev/null 2>&1 && docker info > /dev/null 2>&1; then
+  SECRET_KEY_BASE=x POSTGRES_PASSWORD=x docker compose config -q && echo "compose.yaml is valid"
+fi
+
 step "TypeScript"
 (cd frontend && npx tsc --noEmit)
 

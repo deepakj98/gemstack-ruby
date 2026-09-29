@@ -152,7 +152,7 @@ documented before the next begins.
 
 ### Phase 6 verification
 
-- 463 tests across fourteen gems, 0 skipped with PostgreSQL + Redis; RuboCop clean.
+- 443 tests across fourteen gems, 0 skipped with PostgreSQL + Redis; RuboCop clean.
 - `script/e2e` adds auth, storage and a policy to a generated app: 78 generated tests, TypeScript and
   `next build` pass; `add auth` is idempotent.
 - Live through `gemstack dev`: signup → session cookie → `/me`; the confirmation email delivered by the
@@ -160,9 +160,28 @@ documented before the next begins.
   the gateway to disk; every auth page renders.
 - S3 presigning checked offline with stubbed responses (signed headers include content type and length).
 
-## Phase 7 — Developer experience
+## Phase 7 — Developer experience  *(complete)*
 
-- [ ] Richer development error pages, `gemstack doctor`
-- [ ] OpenAPI documentation UI
-- [ ] Deployment recipes (Docker, Caddy, Fly/Render/Railway)
-- [ ] Published npm package for the client runtime (optional to the vendored one)
+- [x] Development error pages for browsers (source excerpt, highlighted app frames); server exceptions logged
+      in the browser console by the TypeScript client
+- [x] `/api/docs`: interactive, self-contained API docs built from the live routes (development only)
+- [x] `gemstack doctor` (and `--production`): Ruby, Node, dependencies, secrets in git, boot, PostgreSQL,
+      migrations, jobs table, Redis, contract freshness, port, production environment
+- [x] `gemstack generate deploy`: Dockerfile (api + web), compose.yaml, Caddyfile, Procfile, .dockerignore;
+      Fly / Render / Railway / Heroku / VM recipes in docs/deployment.md
+- [ ] Published npm package for the client runtime — deferred (D-059)
+
+### Phase 7 verification
+
+- 463 tests across fourteen gems, 0 skipped with PostgreSQL + Redis; RuboCop clean; `script/e2e` passes
+  (now runs `gemstack doctor`, `generate deploy` and validates `compose.yaml`).
+- Docs page and error page rendered in headless Chrome and checked visually.
+- Docker: images built from a generated app with auth (API 253 MB, web 715 MB); the compose stack ran in
+  production mode behind Caddy on https://localhost — migrations, healthy API, jobs worker, Next.js,
+  signup with a `__Host-` Secure cookie, HSTS, `/api/docs` 404; `doctor --production` ran in the container.
+
+## Beyond 1.0 (ideas)
+
+- OAuth / social login, two-factor authentication; attachment models and image variants
+- WebSocket transport, presence; recurring jobs and a jobs dashboard
+- Next.js `output: "standalone"` images; published client package

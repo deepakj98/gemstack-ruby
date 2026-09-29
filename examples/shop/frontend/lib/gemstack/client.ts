@@ -18,6 +18,8 @@ export interface ApiErrorBody {
   error: { code: string; message: string; request_id?: string };
   /** Field-level validation messages, e.g. { name: ["is required"] }. */
   errors?: Record<string, string[]>;
+  /** Development only (config.http.show_exceptions): the server-side exception. */
+  exception?: { class: string; message: string; backtrace: string[] };
 }
 
 export class ApiError extends Error {
@@ -104,6 +106,11 @@ export async function request<T>(method: string, path: string, options: RequestO
   const data = text ? parse(text) : null;
 
   if (!response.ok) {
+    const exception = (data as ApiErrorBody | null)?.exception;
+    if (exception && process.env.NODE_ENV !== "production") {
+      // The Ruby exception behind a 500, so it shows up next to the failing request.
+      console.error(`[GemStack API] ${method} ${path} → ${exception.class}: ${exception.message}\n  ${exception.backtrace.slice(0, 8).join("\n  ")}`);
+    }
     throw new ApiError(response.status, data as ApiErrorBody | null, response.statusText || `HTTP ${response.status}`);
   }
   return data as T;

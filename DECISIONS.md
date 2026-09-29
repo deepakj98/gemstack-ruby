@@ -741,6 +741,66 @@ content is untrusted.
 - **Workers and lazily-required jobs:** the live dev check showed the worker
   couldn't resolve `GemStack::Mail::DeliveryJob` (D-047's autoload).
 
+## D-055 Development error pages for browsers only
+
+When `show_exceptions` is on and a request is a top-level browser navigation
+(`Sec-Fetch-Dest: document`, or `Accept: text/html` for older browsers), a
+500 renders an HTML page: message, source excerpt of the first app frame,
+backtrace with app frames highlighted and gem paths shortened. Everything
+else — `fetch`, the generated client, curl — keeps the JSON envelope, whose
+`exception` field the TypeScript client now prints to the console in
+development. Self-contained HTML with a strict CSP, no JavaScript; 4xx errors
+stay JSON (they are answers, not bugs). Production is unchanged.
+
+## D-056 API docs: built-in, live, development only
+
+`/api/docs` is a single self-contained page (no CDN: works offline, sends
+nothing anywhere, strict CSP) that renders an OpenAPI document built from the
+live routes on each request, with TypeScript-style types matching the
+generated client and a "try it" form that uses the session cookie. Swagger UI
+or Scalar would add a large dependency or a CDN request for a development
+convenience. Off in production by default: an endpoint map is reconnaissance
+material. `openapi.json` remains for external tools.
+
+## D-057 `gemstack doctor`
+
+Independent checks (a failure never hides the others), each with the fix as a
+command. Exit status 1 on problems, so it works in CI and in a container
+before a release. `--production` checks the environment a deploy needs. It
+also fails when `.env`, key files or generated secrets are tracked by git and
+says to rotate them — removing a file doesn't remove it from history.
+
+## D-058 Deployment recipes: generated files, not a deploy tool
+
+`gemstack generate deploy` writes a multi-target Dockerfile (`api`, `web`),
+`compose.yaml` (Postgres, a one-shot migration, API, jobs, Next.js, Caddy),
+a `Caddyfile`, a `Procfile` and `.dockerignore`. GemStack doesn't deploy
+anything: platforms change faster than frameworks, and the files are
+readable enough to adapt. Images are non-root, secret-free (runtime
+environment only; `.env*` excluded from the build context) and health-checked.
+Verified by building the images and running the stack in production mode:
+`__Host-` Secure cookie over HTTPS, HSTS, docs 404, jobs worker running.
+
+## D-059 No published npm package (yet)
+
+The client runtime stays a vendored, app-owned file (`frontend/lib/gemstack/`,
+D-026): apps customise it (auth headers, logging) and it has no version skew
+with the backend that generated the types. Publishing a package to the public
+npm registry is also a public release, which needs a deliberate review of
+what goes out; it isn't needed for anything GemStack does today. Revisit if
+several frontends share one backend.
+
+## D-060 Findings recorded during Phase 7
+
+- **Production eager loading**, not caught by any test until the Docker run:
+  the image failed with `uninitialized constant GemStack::Page` because
+  `rake gems:install` reinstalling the same version left RubyGems' cached
+  `.gem` stale, and `bundle cache` copied that. The task now refreshes the
+  cache; the e2e also reminded that apps from a checkout can't be built into
+  images without `bundle cache --all` (the generator warns).
+- **Docs page rendering**: nested child arrays weren't flattened, which only a
+  real browser (headless Chrome screenshot) showed.
+
 ---
 
 ## Proposed decisions (future phases)
