@@ -4,8 +4,8 @@ require "gemstack/dev/file_watcher"
 
 module GemStack
   # Development middleware: reloads application code and routes before a
-  # request when files under app/ or config/routes.rb have changed
-  # (DECISIONS D-007). The shared lock is held until the response body is
+  # request when files under app/ or config/routes.rb have changed.
+  # The shared lock is held until the response body is
   # closed, so streamed responses finish on the code that produced them.
   class Reloader
     WATCHED = ["app/**/*", "config/routes.rb"].freeze

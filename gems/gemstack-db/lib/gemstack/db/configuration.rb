@@ -6,7 +6,7 @@ require "yaml"
 
 module GemStack
   module DB
-    # Where the connection settings come from, first match wins (DECISIONS D-062):
+    # Where the connection settings come from, first match wins:
     #
     #   1. config.db.url, set in config/app.rb or config/environments/*.rb
     #   2. DATABASE_URL (TEST_DATABASE_URL in the test environment)

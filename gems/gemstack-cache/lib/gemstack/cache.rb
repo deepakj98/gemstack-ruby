@@ -3,7 +3,7 @@
 require "gemstack/core"
 
 module GemStack
-  # Application caching (DECISIONS D-035):
+  # Application caching:
   #
   #   GemStack.cache.fetch("product:#{id}", expires_in: 300) { Product.find(id) }
   #   GemStack.cache.fetch([:stats, Date.today]) { expensive_report }   # array keys

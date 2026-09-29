@@ -64,7 +64,7 @@ schemas become inline object types. Shapes are `type` aliases, so they're
 assignable to the client's query record type.
 
 Mapping of scalar types: see [serialization](serialization.md#types-and-output-format).
-Decimals are strings so no precision is lost in JavaScript (DECISIONS D-022).
+Decimals are strings so no precision is lost in JavaScript.
 
 ## Documenting custom endpoints
 

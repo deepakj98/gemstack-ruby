@@ -1,7 +1,6 @@
 # Architecture (overview)
 
-The full design is in [ARCHITECTURE.md](../ARCHITECTURE.md); decisions and
-their reasoning are in [DECISIONS.md](../DECISIONS.md). This page is the
+The full design is in [ARCHITECTURE.md](../ARCHITECTURE.md). This page is the
 short version for application developers.
 
 ## Gems

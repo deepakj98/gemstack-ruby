@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+See the [GemStack changelog](https://github.com/gemstack-rb/gemstack/blob/main/CHANGELOG.md).
+
 ## 0.2.4
 
 See the [GemStack changelog](https://github.com/gemstack-rb/gemstack/blob/main/CHANGELOG.md).

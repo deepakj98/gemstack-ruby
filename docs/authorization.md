@@ -49,7 +49,7 @@ end
 - The policy is found by name: an order, the `Order` class and `Order.where(...)` all use
   `OrderPolicy`; pass `policy: OtherPolicy` to override.
 
-**Deny by default** (DECISIONS D-052): `index?`, `show?`, `create?`,
+**Deny by default**: `index?`, `show?`, `create?`,
 `update?` and `destroy?` are `false` until a policy says otherwise, and a
 missing `Scope#resolve` raises instead of listing everything. Anonymous users
 reach policies as `user = nil`.

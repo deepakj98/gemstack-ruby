@@ -1,7 +1,7 @@
 # Models and the database
 
-GemStack models are [Sequel](https://sequel.jeremyevans.net) models (DECISIONS
-D-018) on SQLite, PostgreSQL or MySQL — connecting, `config/database.yml`,
+GemStack models are [Sequel](https://sequel.jeremyevans.net) models on
+SQLite, PostgreSQL or MySQL — connecting, `config/database.yml`,
 adapters and `db:*` commands are in [databases](database.md). API-only apps
 without a database use `gemstack new NAME --skip-database`.
 

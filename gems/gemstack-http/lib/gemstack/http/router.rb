@@ -2,7 +2,7 @@
 
 module GemStack
   module HTTP
-    # Routes requests to controllers or Rack apps (DECISIONS D-004, D-005).
+    # Routes requests to controllers or Rack apps.
     #
     #   router = Router.new(prefix: "/api")
     #   router.draw do

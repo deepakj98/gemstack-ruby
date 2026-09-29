@@ -20,7 +20,7 @@ module GemStack
     # DELETE) from other sites are refused with 403 unless the origin is in
     # config.auth.trusted_origins. Browsers label every request with
     # Sec-Fetch-Site / Origin; clients that send neither (curl, servers) are
-    # not browsers and can't carry a victim's cookie (DECISIONS D-051).
+    # not browsers and can't carry a victim's cookie.
     module Controller
       SAFE_METHODS = %w[GET HEAD OPTIONS].freeze
 

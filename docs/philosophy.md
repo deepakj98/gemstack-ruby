@@ -9,7 +9,7 @@
    it is the default: `/api` prefix, autoloaded `app/`, automatic dev ports,
    JSON error envelope, request IDs.
 2. **DRY across the stack.** One definition should drive Ruby, the API
-   contract, TypeScript types and the frontend client (Phase 2 onwards).
+   contract, TypeScript types and the frontend client.
 3. **Production-ready defaults.** Security headers, body limits, filtered
    logs, hidden internals in production errors — on from the first request.
 4. **Fast by default, proven by measurement.** Designs that are cheap by
@@ -27,7 +27,7 @@
   in the Gemfile works exactly as usual; nothing is sandboxed.
 - **Not a generator of things you didn't ask for.** New apps have no users,
   auth, CRUD, or tables. Optional modules are added explicitly.
-- **Not a reinvention.** Rack, Puma, Zeitwerk, Thor, TanStack Query and (soon)
-  Sequel do their jobs well; GemStack integrates them. We build our own only
-  where it's small and clearly better for the use case (router, dev gateway) —
-  and record why in [DECISIONS.md](../DECISIONS.md).
+- **Not a reinvention.** Rack, Puma, Zeitwerk, Thor, Sequel and TanStack Query
+  do their jobs well; GemStack integrates them. It builds its own pieces only
+  where they're small and clearly better for the use case (router, dev
+  gateway).

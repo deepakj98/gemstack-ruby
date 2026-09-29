@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module GemStack
-  # Minimal `.env` file support (see DECISIONS.md D-013).
+  # Minimal `.env` file support.
   #
   # Supported syntax:
   #   KEY=value

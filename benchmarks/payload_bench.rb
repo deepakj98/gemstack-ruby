@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Phase 3 measurements: serialization, JSON codecs, compression levels,
+# Measurements: serialization, JSON codecs, compression levels,
 # cache hits and the cost of the new middleware. In-process, no network.
 # Run with `bundle exec rake bench` (or `ruby --yjit benchmarks/payload_bench.rb`).
 
@@ -76,7 +76,7 @@ measure("memory cache hit (20 serialized records)", 50_000) { cache.fetch("page"
 cache.write("n", 1)
 measure("memory cache hit (integer)", 200_000) { cache.read("n") }
 
-puts "\n-- request cost of the Phase 3 middleware (index, 20 records)"
+puts "\n-- request cost of the response middleware (index, 20 records)"
 class ProductsController < GemStack::HTTP::Controller
   ITEMS = Array.new(20) { |i| { id: i, name: "Product #{i}", price: "#{i}.99", active: true } }.freeze
   def index = render(ITEMS)

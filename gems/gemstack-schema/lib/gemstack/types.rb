@@ -145,7 +145,7 @@ module GemStack
     register :bigint, ts: "number", openapi: { type: "integer", format: "int64" }, coerce: method(:to_integer)
     register :references, ts: "number", openapi: { type: "integer", format: "int64" }, coerce: method(:to_integer)
     register :float, ts: "number", openapi: { type: "number" }, coerce: method(:to_float)
-    # Decimals travel as strings so no precision is lost in JavaScript (DECISIONS D-022).
+    # Decimals travel as strings so no precision is lost in JavaScript.
     register :decimal, ts: "string", openapi: { type: "string", format: "decimal" },
                        coerce: method(:to_decimal),
                        dump: ->(value) { (value.is_a?(BigDecimal) ? value : BigDecimal(value.to_s)).to_s("F") }

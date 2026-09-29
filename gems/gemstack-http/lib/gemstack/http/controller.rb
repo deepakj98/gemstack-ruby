@@ -71,7 +71,7 @@ module GemStack
         end
 
         # Declares the request schema for actions; `input` returns the
-        # validated, coerced data inside those actions (DECISIONS D-021).
+        # validated, coerced data inside those actions.
         #
         #   accepts :create, with: Product.input_schema
         #   accepts :update, with: Product.input_schema, partial: true

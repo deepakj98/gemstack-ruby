@@ -3,7 +3,7 @@
 module GemStack
   module HTTP
     # One page of a collection, rendered as the pagination envelope
-    # (DECISIONS D-034):
+    # (docs/pagination.md):
     #
     #   { "data": [ ... ], "meta": { "page": 2, "per_page": 25, "total": 180, "total_pages": 8 } }
     #

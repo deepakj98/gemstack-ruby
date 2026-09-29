@@ -43,7 +43,7 @@ config.mail.default_from = "Shop <hello@shop.example>"   # default: MAIL_FROM
 config.mail.queue = "mailers"               # deliver_later's queue
 ```
 
-`deliver_later` uses `GemStack::Jobs` (DECISIONS D-047): failed deliveries are
+`deliver_later` uses `GemStack::Jobs`: failed deliveries are
 retried with backoff, and — with the database queue — an email enqueued in a
 transaction that rolls back is never sent.
 

@@ -4,7 +4,7 @@ module GemStack
   module HTTP
     module Middleware
       # Answers GET/HEAD config.http.health_path with 200 {"status":"ok"}
-      # without touching the router (DECISIONS D-016).
+      # without touching the router.
       class HealthCheck
         BODY = '{"status":"ok"}'
 

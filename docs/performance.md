@@ -2,7 +2,7 @@
 
 GemStack's rule: make the default path cheap by construction, then
 **measure** before optimising anything else. Every default below is backed by
-a measurement recorded in [DECISIONS.md](../DECISIONS.md).
+a measurement (the scripts are in `benchmarks/`).
 
 ## Defaults
 
@@ -11,7 +11,7 @@ a measurement recorded in [DECISIONS.md](../DECISIONS.md).
 | JIT | YJIT in production (`config.jit`) | +27% end-to-end throughput (D-039) |
 | Server | Puma threads (`GEMSTACK_MAX_THREADS`), workers + `preload_app!` via `WEB_CONCURRENCY` | |
 | Routing | static paths: one hash lookup; dynamic: segment trie | cost depends on path depth, not route count |
-| Middleware | compiled once at boot, 9 small middlewares | ≈4 µs for the Phase 1 stack; ETags +2 µs |
+| Middleware | compiled once at boot, 9 small middlewares | ≈4 µs for the default stack; ETags +2 µs |
 | JSON | stdlib `JSON::Coder` (json 3) | faster than Oj on real payloads (D-037) |
 | Serialization | compiled per serializer | 3× faster than the first version (D-038) |
 | Compression | Brotli 4 (with the `brotli` gem) / gzip 4, ≥ 1 KB | best CPU/size balance measured (D-033) |

@@ -4,7 +4,7 @@ module GemStack
   class CLI < Thor
     # `gemstack generate deploy` — Dockerfile (api + web targets), compose.yaml
     # (Postgres, migrations, API, jobs, Next.js, Caddy), Caddyfile, Procfile and
-    # .dockerignore (DECISIONS D-058). Nothing is deployed anywhere.
+    # .dockerignore. Nothing is deployed anywhere.
     class DeployGenerator < Generator
       def initialize(root:, output: $stdout, force: false)
         super(output: output, force: force)

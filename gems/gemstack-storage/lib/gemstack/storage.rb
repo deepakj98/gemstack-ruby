@@ -8,7 +8,7 @@ require "gemstack/core"
 require "gemstack/http"
 
 module GemStack
-  # File storage (DECISIONS D-053): files go from the browser straight to
+  # File storage: files go from the browser straight to
   # the storage service, never through a Ruby process.
   #
   #   # POST /api/uploads → presigned upload for the browser

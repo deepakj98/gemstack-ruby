@@ -100,7 +100,7 @@ See [realtime](realtime.md#configuration): `config.realtime.broker`, `path`,
 `heartbeat`, `replay_size`, `replay_ttl`, `max_channels`, `max_buffer`,
 `retry_ms`, `redis_url`, `redis_channel`.
 
-### Auth, mail, storage (Phase 6 modules)
+### Auth, mail, storage (optional modules)
 
 - `config.auth` — see [authentication](authentication.md#configuration): `session_ttl`,
   `session_touch_interval`, `cookie_secure`, `cookie_name`, `cookie_same_site`, `password_reset_ttl`,

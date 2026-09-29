@@ -9,7 +9,7 @@ module GemStack
     # whichever version manager installed them (rbenv, rvm, asdf, mise,
     # chruby, nvm, fnm, nodenv, Volta, Homebrew…). GemStack pins versions in
     # files every manager reads (.ruby-version, .node-version, .nvmrc,
-    # .tool-versions) and never assumes one manager (DECISIONS D-066).
+    # .tool-versions) and never assumes one manager.
     module Toolchain
       MIN_RUBY = "3.3"
       MIN_NODE = [20, 9].freeze # Next.js 16

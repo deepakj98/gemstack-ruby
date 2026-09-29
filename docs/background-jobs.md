@@ -1,7 +1,7 @@
 # Background jobs
 
-GemStack jobs run in **the app's own database** by default (SQLite, PostgreSQL or MySQL) — no Redis, no extra service
-(DECISIONS D-040). Work only becomes asynchronous when you ask for it with
+GemStack jobs run in **the app's own database** by default (SQLite, PostgreSQL or MySQL) — no Redis, no extra service.
+Work only becomes asynchronous when you ask for it with
 `perform_later`.
 
 ## Writing a job
@@ -58,7 +58,7 @@ workers are woken by `NOTIFY`, which is also transactional, so the job starts
 within milliseconds of the commit; on MySQL and SQLite they poll every second
 (`config.jobs.poll_interval`). Workers claim jobs with `FOR UPDATE SKIP LOCKED`
 on PostgreSQL and MySQL 8, and with SQLite's write lock on SQLite, so a job is
-never run by two workers at once (DECISIONS D-063). (The `:async` and
+never run by two workers at once. (The `:async` and
 `:sidekiq` adapters wait for the commit too.)
 
 ## Retries and failures

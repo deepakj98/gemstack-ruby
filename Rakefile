@@ -63,7 +63,7 @@ task :bench do
   Dir["benchmarks/*_bench.rb"].each { |file| ruby file }
 end
 
-# The suites that touch the database, run once per adapter (DECISIONS D-062):
+# The suites that touch the database, run once per adapter:
 # SQLite always; PostgreSQL with GEMSTACK_TEST_DATABASE_URL; MySQL (mysql2 and
 # trilogy) with GEMSTACK_TEST_MYSQL_URL=mysql2://user:pass@127.0.0.1:3306/gemstack_test.
 DATABASE_SUITES = %w[test:gemstack-db test:gemstack-jobs test:gemstack-auth].freeze

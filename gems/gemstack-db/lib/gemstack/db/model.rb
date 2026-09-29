@@ -33,7 +33,7 @@ module GemStack
 
     # A model may load before its migration has run (e.g. while generating the
     # API contract right after `generate resource`); queries still fail
-    # clearly with "relation does not exist" (DECISIONS D-024).
+    # clearly with "relation does not exist".
     self.require_valid_table = false
 
     class << self

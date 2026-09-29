@@ -23,17 +23,6 @@ gemstack dev          # → http://localhost:3000
          Next.js           /api/*  → Ruby (Rack + Puma)
 ```
 
-> **Status: Phases 1–7 complete — see [ROADMAP.md](ROADMAP.md).**
-> Built: HTTP layer, router, middleware, controllers, single-origin dev server,
-> Next.js + TypeScript template, models on SQLite/PostgreSQL/MySQL (Sequel, `config/database.yml`), migrations,
-> validation, serializers, TypeScript/OpenAPI contract, `generate resource`.
-> Phase 3: compression, ETags/304, pagination, `GemStack.cache`, YJIT by default, benchmarks.
-> Phase 4: background jobs in the app's database (transactional, SKIP LOCKED, NOTIFY on PostgreSQL), Sidekiq adapter.
-> Phase 5: realtime — `GemStack.broadcast` → Server-Sent Events, PostgreSQL or Redis fan-out, `useRealtime`.
-> Phase 6: `gemstack add auth` (Argon2id, cookie sessions + API tokens, reset/verification emails,
-> Next.js pages), policies, mail, `gemstack add storage` (direct uploads to disk/S3).
-> Phase 7: dev error pages, `/api/docs`, `gemstack doctor`, `gemstack generate deploy` (Docker, Caddy, Procfile).
-
 ## Why
 
 - **Convention over configuration.** Routes live under `/api`, code in `app/`
@@ -116,7 +105,7 @@ server database ([databases](docs/database.md)).
 
 ```bash
 gem install gemstack
-gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.4"
+gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.5"
 ```
 
 The `gemstack` gem is the framework: it brings every module an app needs
@@ -131,7 +120,6 @@ version.
 the CLI straight from the checkout, and apps it creates point their Gemfile at
 the checkout (`path "…/gems"`), so framework changes apply immediately.
 `bundle exec rake gems:install` installs the checkout's gems as if released.
-Releases: [RELEASING.md](RELEASING.md).
 
 See [`examples/shop`](examples/shop) for a complete example application.
 
@@ -155,7 +143,7 @@ gems/
   gemstack/        umbrella: Application, autoloading, reloading, test helpers
 docs/              guides
 benchmarks/        performance measurements
-ARCHITECTURE.md    design · ROADMAP.md plan · DECISIONS.md decision log · RELEASING.md releases
+ARCHITECTURE.md    how GemStack is put together · CHANGELOG.md releases
 ```
 
 ## Developing GemStack
