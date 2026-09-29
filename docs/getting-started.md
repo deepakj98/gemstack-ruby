@@ -2,8 +2,9 @@
 
 ## Requirements
 
-Ruby ≥ 4.0, Bundler, Node.js ≥ 20, npm and PostgreSQL (or
-`gemstack new NAME --skip-database` for an API without a database).
+Ruby ≥ 4.0, Bundler, Node.js ≥ 20 and npm. New apps use SQLite, which needs
+nothing else; `--database=postgresql` or `--database=mysql2` need that server
+([databases](database.md)).
 
 Install the `gemstack` command:
 
@@ -21,14 +22,10 @@ cd shop
 gemstack dev
 ```
 
-`gemstack new` writes the app, runs `bundle install`, tries `gemstack db:create`,
-runs `npm install`, and initialises git. If your PostgreSQL needs credentials,
-put them in `.env` and run `gemstack db:create`:
-
-```bash
-DATABASE_URL=postgres://me:secret@localhost:5432/shop_development
-TEST_DATABASE_URL=postgres://me:secret@localhost:5432/shop_test
-```
+`gemstack new` writes the app, runs `bundle install`, creates the database
+(`gemstack db:create`), runs `npm install`, and initialises git. With
+PostgreSQL or MySQL, put credentials in `config/database.yml` (or
+`DATABASE_URL` / `TEST_DATABASE_URL` in `.env`) and run `gemstack db:create`.
 
 Open **http://localhost:3000** — the starter page calls
 `GET /api/health` from the browser and shows whether the Ruby API answered.

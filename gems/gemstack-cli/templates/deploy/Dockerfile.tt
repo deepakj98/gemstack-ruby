@@ -14,7 +14,7 @@ ARG NODE_VERSION=<%= node_version %>
 
 # ── Ruby API ────────────────────────────────────────────────────────────────
 FROM ruby:${RUBY_VERSION}-slim AS api-build
-RUN apt-get update -qq && apt-get install --no-install-recommends -y build-essential libpq-dev libyaml-dev git \
+RUN apt-get update -qq && apt-get install --no-install-recommends -y <%= build_packages %> \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV BUNDLE_DEPLOYMENT=1 BUNDLE_WITHOUT="development:test" BUNDLE_PATH=/usr/local/bundle
@@ -25,9 +25,10 @@ COPY . .
 RUN rm -rf frontend tmp/* log/* .env*
 
 FROM ruby:${RUBY_VERSION}-slim AS api
-RUN apt-get update -qq && apt-get install --no-install-recommends -y libpq5 libyaml-0-2 curl \
+RUN apt-get update -qq && apt-get install --no-install-recommends -y <%= runtime_packages %> \
     && rm -rf /var/lib/apt/lists/* \
-    && groupadd --system --gid 1000 app && useradd --system --uid 1000 --gid app --create-home app
+    && groupadd --system --gid 1000 app && useradd --system --uid 1000 --gid app --create-home app<% if sqlite? %> \
+    && mkdir -p /data && chown app:app /data<% end %>
 WORKDIR /app
 ENV GEMSTACK_ENV=production BUNDLE_DEPLOYMENT=1 BUNDLE_WITHOUT="development:test" BUNDLE_PATH=/usr/local/bundle \
     GEMSTACK_API_HOST=0.0.0.0 GEMSTACK_API_PORT=4000

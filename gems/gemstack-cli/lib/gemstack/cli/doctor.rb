@@ -35,6 +35,7 @@ module GemStack
           database_ok = check_database
           check_migrations_and_jobs if database_ok
           check_cache
+          check_realtime_broker
           check_contract if database_ok
         end
         check_production_settings if @production
@@ -130,18 +131,34 @@ module GemStack
       def check_database
         return true unless defined?(GemStack::DB)
 
-        url = GemStack::DB.config.url
+        settings = GemStack::DB.settings
+        where = "#{GemStack::DB::Configuration.describe(settings)}, from #{settings[:source]}"
+        if settings[:adapter] == "sqlite" && !GemStack::DB::Tasks.exists?(settings)
+          problem("SQLite database file missing (#{where})", "run: gemstack db:create")
+          return false
+        end
         GemStack::DB.connection.test_connection
-        pass("PostgreSQL reachable (#{redact(url)})")
+        pass("database reachable (#{where})")
         true
-      rescue StandardError => e
+      rescue StandardError, LoadError => e
         message = e.message.lines.first.to_s.strip
         message = message.split(/FATAL:\s*/, 2).last if message.include?("FATAL:")
-        hint = if message.include?("does not exist") then "run: gemstack db:create"
-               else "is PostgreSQL running? Set DATABASE_URL (now #{redact(url.to_s)}) in .env or the environment"
+        hint = if message.match?(/does not exist|Unknown database/) then "run: gemstack db:create"
+               elsif e.is_a?(GemStack::ConfigurationError) then "fix config/database.yml or DATABASE_URL"
+               else "is the database server running? Check config/database.yml or DATABASE_URL (#{where})"
                end
-        problem("PostgreSQL: #{message}", hint)
+        problem("database: #{message}", hint)
         false
+      end
+
+      # MySQL/SQLite apps: a jobs worker is a separate process, and the memory
+      # broker can't carry its broadcasts to the web server.
+      def check_realtime_broker
+        return unless defined?(GemStack::Realtime) && defined?(GemStack::Jobs) && GemStack::Jobs.database_queue?
+        return unless GemStack.config.realtime.broker.to_s == "memory" && jobs_used?
+
+        caution("realtime uses the in-process memory broker",
+                "broadcasts from jobs won't reach the web server — set config.realtime.broker = :redis (REDIS_URL)")
       end
 
       def check_migrations_and_jobs
@@ -151,7 +168,7 @@ module GemStack
         else
           caution("#{pending.size} pending migration(s)", "run: gemstack db:migrate")
         end
-        return unless defined?(GemStack::Jobs) && GemStack.config.jobs.adapter.to_s == "postgres"
+        return unless defined?(GemStack::Jobs) && GemStack::Jobs.database_queue?
         return unless jobs_used?
 
         if GemStack::DB.connection.table_exists?(:gemstack_jobs)
@@ -194,7 +211,7 @@ module GemStack
         elsif secret.length < 64 then problem("SECRET_KEY_BASE is too short", "use: openssl rand -hex 64")
         else pass("SECRET_KEY_BASE is set")
         end
-        env_check("DATABASE_URL", "the production PostgreSQL URL") if defined?(GemStack::DB)
+        check_production_database if defined?(GemStack::DB)
         if defined?(GemStack::Mail) && GemStack.config.mail.delivery.to_s == "smtp"
           env_check("SMTP_URL", "e.g. smtp://user:password@smtp.example.com:587")
         end
@@ -203,6 +220,19 @@ module GemStack
         return unless GemStack.config.respond_to?(:cache) && GemStack.config.cache.store.to_s == "redis"
 
         env_check("REDIS_URL", "the Redis used by the cache")
+      end
+
+      def check_production_database
+        settings = GemStack::DB.settings
+        if settings[:source].start_with?("default")
+          problem("no production database configured",
+                  "set DATABASE_URL, or a production section in config/database.yml")
+        elsif settings[:adapter] == "sqlite"
+          caution("SQLite in production (#{settings[:database]})",
+                  "keep the file on a persistent volume and run a single server; back it up")
+        else
+          pass("production database: #{GemStack::DB::Configuration.describe(settings)} (#{settings[:source]})")
+        end
       end
 
       def check_storage_settings

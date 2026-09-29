@@ -1,45 +1,18 @@
 # Models and the database
 
-GemStack uses **PostgreSQL through [Sequel](https://sequel.jeremyevans.net)**
-(DECISIONS D-018). New apps include `gem "gemstack-db"`; API-only apps without
-a database use `gemstack new NAME --skip-database`.
-
-## Connecting
-
-| Environment | URL |
-|---|---|
-| development | `DATABASE_URL`, else `postgres:///<app>_development` (local socket, your OS user) |
-| test | `TEST_DATABASE_URL`, else `postgres:///<app>_test` — never `DATABASE_URL` |
-| production | `DATABASE_URL` |
-
-Put local URLs in `.env` (loaded in development and test):
-
-```bash
-DATABASE_URL=postgres://me:secret@localhost:5432/shop_development
-TEST_DATABASE_URL=postgres://me:secret@localhost:5432/shop_test
-```
+GemStack models are [Sequel](https://sequel.jeremyevans.net) models (DECISIONS
+D-018) on SQLite, PostgreSQL or MySQL — connecting, `config/database.yml`,
+adapters and `db:*` commands are in [databases](database.md). API-only apps
+without a database use `gemstack new NAME --skip-database`.
 
 The connection is lazy: the app boots even when the database is down, and
 requests then fail with `503 service_unavailable`. The pool size follows
 Puma's thread count (`GEMSTACK_MAX_THREADS`, default 5); Puma's `before_fork`
 disconnects before forking workers.
 
-## Commands
-
 ```bash
-gemstack db:create        # create the database
-gemstack db:migrate       # apply pending migrations   (--target VERSION)
-gemstack db:rollback      # revert the last migration   (--steps N)
-gemstack db:status        # applied / pending
-gemstack db:seed          # load db/seeds.rb
-gemstack db:setup         # create + migrate + seed
-gemstack db:reset         # drop + setup (development/test only)
-gemstack db:drop          # refused in production unless GEMSTACK_ALLOW_DB_DROP=1
 gemstack generate migration AddSkuToProducts sku:string:unique
 ```
-
-All accept `-e ENV`. In development the API logs a warning at boot when
-migrations are pending.
 
 ## Migrations
 

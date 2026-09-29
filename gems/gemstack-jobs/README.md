@@ -1,6 +1,6 @@
 # gemstack-jobs
 
-GemStack background jobs: a PostgreSQL queue by default, swappable adapters.
+GemStack background jobs: a queue in the app's database by default, swappable adapters.
 
 Part of [GemStack](https://github.com/gemstack-rb/gemstack), a modular Ruby API framework for Next.js
 applications. All GemStack gems are developed together in that repository and released with the same

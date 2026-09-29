@@ -26,7 +26,8 @@ class PostgresBrokerTest < Minitest::Test
   URL = ENV.fetch("GEMSTACK_TEST_DATABASE_URL", nil)
 
   def setup
-    skip "set GEMSTACK_TEST_DATABASE_URL to run the PostgreSQL broker tests" unless URL
+    skip "set GEMSTACK_TEST_DATABASE_URL to a PostgreSQL URL to run the PostgreSQL broker tests" unless
+      URL&.start_with?("postgres")
     require "gemstack/db"
     GemStack.config.db.url = URL
     GemStack::DB::Tasks.create

@@ -12,7 +12,7 @@ GemStack doctor · shop
   ✓ Node.js 22.11.0
   ✓ frontend dependencies installed
   ✓ application boots (development, 12 routes)
-  ✗ PostgreSQL: database "shop_development" does not exist
+  ✗ database: database "shop_development" does not exist
       → run: gemstack db:create
   ✓ port 3000 is free for gemstack dev
 
@@ -21,12 +21,14 @@ GemStack doctor · shop
 
 It checks Ruby (and `.ruby-version`), Node.js (20.9+ for Next.js 16), the
 frontend's `node_modules`, secret files tracked by git (`.env`, keys), that
-the app boots, PostgreSQL, pending migrations, the jobs table, Redis (when
-the cache uses it), whether the generated TypeScript is up to date, and the
+the app boots, the database (and where its settings come from), pending
+migrations, the jobs table, Redis (when the cache uses it), the realtime
+broker (SQLite/MySQL apps with a jobs worker need Redis for it), whether the generated TypeScript is up to date, and the
 dev port. It exits with status 1 when something is broken, so it fits CI.
 
 `gemstack doctor --production` also checks what a deploy needs —
-`SECRET_KEY_BASE` (length included), `DATABASE_URL`, `SMTP_URL` and `APP_URL`
+`SECRET_KEY_BASE` (length included), a production database (and a reminder
+about SQLite's single-server limits), `SMTP_URL` and `APP_URL`
 with auth, `S3_BUCKET` and `aws-sdk-s3` with S3 storage, `REDIS_URL` with the
 Redis cache. Run it where the production environment variables are set, e.g.
 `docker compose run --rm api bundle exec gemstack doctor --production`.

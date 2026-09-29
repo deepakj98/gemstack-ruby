@@ -20,9 +20,12 @@ GemStack.broadcast("announcements", "maintenance", { at: "22:00" })
 Data is serialized exactly like `render` (serializers by convention), so
 browsers get the same shapes as the API and the TypeScript types match.
 
-With the default PostgreSQL broker, a broadcast made inside a transaction is
-delivered **only when it commits**. A broadcast from a background job reaches
-browsers connected to any API process.
+On PostgreSQL the default broker is `LISTEN/NOTIFY`: a broadcast made inside a
+transaction is delivered **only when it commits**, and a broadcast from a
+background job reaches browsers connected to any API process. With SQLite or
+MySQL, set `config.realtime.broker = :redis` (and `REDIS_URL`) when broadcasts
+come from another process such as the jobs worker — the default memory broker
+only reaches this process (`gemstack doctor` warns).
 
 ## Channels (deny by default)
 
@@ -132,7 +135,7 @@ Test channel rules directly with `GemStack.channels.authorized?(name, request)`.
 
 | Setting | Default |
 |---|---|
-| `config.realtime.broker` | `:postgres` with gemstack-db, else `:memory`; `:test` in tests |
+| `config.realtime.broker` | `:postgres` when the database is PostgreSQL, `:redis` when `REDIS_URL` is set, else `:memory`; `:test` in tests |
 | `config.realtime.path` | `"#{api_path}/realtime"` |
 | `config.realtime.heartbeat` | `15` s |
 | `config.realtime.replay_size` / `replay_ttl` | `1000` events / `300` s |

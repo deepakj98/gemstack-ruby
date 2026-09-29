@@ -2,20 +2,25 @@
 
 module GemStack
   module DB
-    # Gives Sequel/PostgreSQL errors their HTTP meaning via GemStack::ErrorMapping
-    # (no dependency on the HTTP layer):
+    # Gives Sequel errors their HTTP meaning via GemStack::ErrorMapping (no
+    # dependency on the HTTP layer), for PostgreSQL, MySQL and SQLite:
     #
     #   record not found           → 404 not_found
     #   model validation failed    → 422 validation_failed + field errors
-    #   unique / not-null / FK     → 422 with the offending column when PostgreSQL reports it
+    #   unique / not-null / FK     → 422 with the offending column when the database names it
     #   row still referenced (FK)  → 409 conflict
     #   database unreachable       → 503 service_unavailable
     module Errors
-      KEY_DETAIL = /Key \(([^)]+)\)=/
+      KEY_DETAIL = /Key \(([^)]+)\)=/ # PostgreSQL
+      MYSQL_KEY = /Duplicate entry .* for key '(?:[^.']+\.)?([^']+)'/   # MySQL 8 names table.index
+      SQLITE_COLUMNS = /constraint failed: ((?:[\w.]+(?:, )?)+)/i       # UNIQUE / NOT NULL
+      FK_COLUMN = /FOREIGN KEY \(`?([^`)]+)`?\)/                        # MySQL
 
       module_function
 
       def install!
+        # Registered first: the specific classes below take precedence.
+        ErrorMapping.register(Sequel::DatabaseError) { |error| mysql_missing_value(error) }
         install_record_errors!
         install_constraint_errors!
         ErrorMapping.register(Sequel::DatabaseConnectionError) { ServiceUnavailable.new("Database unavailable") }
@@ -46,7 +51,7 @@ module GemStack
           field_error([column(error)].compact, "is required") || ValidationError.new("A required value is missing")
         end
         ErrorMapping.register(Sequel::ForeignKeyConstraintViolation) do |error|
-          if error.message.include?("is not present")
+          if referenced_missing?(error)
             field_error(columns(error), "does not exist") || ValidationError.new("A referenced record does not exist")
           else
             Conflict.new("Record is still referenced by other records", code: "still_referenced")
@@ -55,6 +60,13 @@ module GemStack
         ErrorMapping.register(Sequel::CheckConstraintViolation) do
           ValidationError.new("A value violates a database constraint", code: "constraint_violation")
         end
+      end
+
+      # MySQL (strict mode) reports an omitted NOT NULL column without a
+      # default as a plain error: "Field 'name' doesn't have a default value".
+      def mysql_missing_value(error)
+        name = error.message[/Field '([^']+)' doesn't have a default value/, 1]
+        name && ValidationError.new(errors: { name => ["is required"] })
       end
 
       def stringify(errors) = errors.to_h { |key, messages| [Array(key).join(","), Array(messages)] }
@@ -67,22 +79,56 @@ module GemStack
 
       def pg_error(error) = error.respond_to?(:wrapped_exception) ? error.wrapped_exception : nil
 
+      # PostgreSQL: "is not present in table"; MySQL: "Cannot add or update a child row".
+      # SQLite doesn't say which side failed, so it is reported as a conflict.
+      def referenced_missing?(error)
+        message = error.message
+        message.include?("is not present") || message.include?("Cannot add or update a child row")
+      end
+
+      # The columns named by a unique or foreign-key violation, when the database says.
       def columns(error)
-        if defined?(PG::PG_DIAG_MESSAGE_DETAIL)
-          detail = pg_error(error)&.result&.error_field(PG::PG_DIAG_MESSAGE_DETAIL)
+        message = error.message
+        if (detail = pg_detail(error) || message[KEY_DETAIL]) && (match = KEY_DETAIL.match(detail))
+          match[1].split(",").map(&:strip).map { |c| c.delete('"') }
+        elsif (match = SQLITE_COLUMNS.match(message))
+          match[1].split(", ").map { |name| name.split(".").last }
+        elsif (match = FK_COLUMN.match(message))
+          [match[1]]
+        elsif (match = MYSQL_KEY.match(message))
+          index_column(match[1])
+        else
+          []
         end
-        detail ||= error.message
-        match = KEY_DETAIL.match(detail.to_s)
-        match ? match[1].split(",").map(&:strip).map { |c| c.delete('"') } : []
       rescue StandardError
         []
       end
 
       def column(error)
-        pg_error(error)&.result&.error_field(PG::PG_DIAG_COLUMN_NAME) ||
-          error.message[/column "([^"]+)"/, 1]
+        message = error.message
+        (defined?(PG::PG_DIAG_COLUMN_NAME) && pg_error(error)&.result&.error_field(PG::PG_DIAG_COLUMN_NAME)) ||
+          message[/column "([^"]+)"/, 1] || message[/Column '([^']+)' cannot be null/, 1] ||
+          sqlite_column(message)
       rescue StandardError
         nil
+      end
+
+      def sqlite_column(message)
+        list = message[SQLITE_COLUMNS, 1] or return nil
+        list.split(", ").first.split(".").last
+      end
+
+      def pg_detail(error)
+        return nil unless defined?(PG::PG_DIAG_MESSAGE_DETAIL)
+
+        pg_error(error)&.result&.error_field(PG::PG_DIAG_MESSAGE_DETAIL)
+      end
+
+      # MySQL reports the index, not the column. `unique: true` on a column
+      # (what the generators write) names the index after the column; other
+      # indexes (table_column_index, composite) can't be mapped to one field.
+      def index_column(name)
+        name == "PRIMARY" || name.match?(/_(?:key|unique|uniq|index)\z/) ? [] : [name]
       end
     end
   end

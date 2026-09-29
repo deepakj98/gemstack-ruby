@@ -828,6 +828,61 @@ internal pins, MIT license, MFA-required pushes and the links.
 release is finished by running it again. Per-gem mirrors can be added later
 (`git subtree split`) without changing any of this.
 
+## D-062 SQLite, PostgreSQL and MySQL; config/database.yml
+
+**Context.** GemStack started PostgreSQL-only (D-018). Users asked for a
+Rails-style `config/database.yml` and for MySQL and SQLite.
+
+**Decision.** `gemstack-db` supports SQLite (`sqlite3`), PostgreSQL (`pg`)
+and MySQL 8 (`mysql2` or `trilogy`), all through Sequel; the driver is the
+app's gem, not a dependency of `gemstack-db`. Settings come from, first match
+first: `config.db.url`, `DATABASE_URL` (`TEST_DATABASE_URL` in tests),
+`config/database.yml` (Rails' format and key names, ERB), then PostgreSQL
+`<app>_<env>` for apps without the file. `gemstack new` takes
+`--database=sqlite3|postgresql|mysql2|trilogy` and defaults to **SQLite**
+(the user's choice): a new app runs with nothing to install.
+
+Migrations stay portable: PostgreSQL type names used by the generators
+(`timestamptz`, `jsonb`, `uuid`, `inet`) map to the closest native type on
+MySQL and SQLite, so one migration runs everywhere. Times are stored in UTC on
+every adapter (`Sequel.database_timezone = :utc`). SQLite runs in WAL mode
+with a 5 s busy timeout, so Puma threads and a jobs worker can share the file.
+JSON fields are (de)serialized outside PostgreSQL. Constraint errors map to
+field errors from each database's messages; SQLite doesn't say which side of
+a foreign key failed, so those are 409s.
+
+**Reasoning.** Sequel already speaks all three; the work was in the places
+GemStack had used PostgreSQL features directly. `database.yml` is what Rails
+developers expect, and `DATABASE_URL` winning keeps hosting platforms working
+unchanged. Every database-backed suite (db, jobs, auth) runs on all four
+drivers (`rake test:databases`), and `script/e2e` builds and tests a full app
+on each.
+
+## D-063 The job queue on every database
+
+The `:database` adapter (`:postgres` remains an alias) claims one job at a
+time in a short transaction: `FOR UPDATE SKIP LOCKED` on PostgreSQL and MySQL
+8; on SQLite an immediate transaction takes the write lock, which serializes
+claimers. Times come from Ruby in UTC, so neither the database clock nor its
+time zone matters. PostgreSQL keeps `NOTIFY` wake-ups (5 s safety poll);
+MySQL and SQLite poll every second. One migration creates the table on all
+three (partial indexes where supported). Realtime keeps `LISTEN/NOTIFY` on
+PostgreSQL; elsewhere cross-process fan-out uses the Redis broker (chosen
+automatically when `REDIS_URL` is set), and `gemstack doctor` warns when a
+jobs worker would broadcast through the in-process memory broker.
+
+## D-064 Findings recorded while adding MySQL and SQLite
+
+- MySQL can't index `TEXT` without a length: the auth tables' unique columns
+  are now `String` (varchar), which also suits PostgreSQL.
+- MySQL reports an omitted `NOT NULL` column as "Field 'x' doesn't have a
+  default value" (not a constraint error); it now maps to a 422 field error.
+- Sequel's table-existence probes are quoted differently per adapter (`"`, `` ` ``,
+  `'`); probes are filtered from error logs, and GemStack checks tables through
+  the catalog (`to_regclass`, `information_schema`, `sqlite_master`) instead.
+- A jobs test assumed NOTIFY and timed out on MySQL; tests now use the
+  mechanism each adapter actually has.
+
 ---
 
 ## Proposed decisions (future phases)

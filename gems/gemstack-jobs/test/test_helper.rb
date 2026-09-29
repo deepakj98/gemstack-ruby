@@ -42,7 +42,7 @@ def drain_record
   items
 end
 
-# PostgreSQL-backed tests need GEMSTACK_TEST_DATABASE_URL.
+# Database-queue tests need GEMSTACK_TEST_DATABASE_URL (PostgreSQL, MySQL or SQLite).
 module JobsDB
   URL = ENV.fetch("GEMSTACK_TEST_DATABASE_URL", nil)
 
@@ -58,13 +58,13 @@ module JobsDB
       GemStack::Jobs::Migration.apply(db)
       db
     rescue Sequel::Error => e
-      warn "PostgreSQL unavailable (#{e.message.lines.first.strip}); skipping queue tests"
+      warn "database unavailable (#{e.message.lines.first.strip}); skipping queue tests"
       nil
     end
   end
 
   def setup
-    skip "set GEMSTACK_TEST_DATABASE_URL to run PostgreSQL queue tests" unless JobsDB.db
+    skip "set GEMSTACK_TEST_DATABASE_URL to run the database queue tests" unless JobsDB.db
     JobsDB.db[:gemstack_jobs].delete
     drain_record
     super

@@ -189,10 +189,10 @@ module GemStack
         supervise_jobs
       end
 
-      # A worker only makes sense with the PostgreSQL queue and its table.
+      # A worker only makes sense with the database queue and its table.
       def jobs_enabled?
         return false unless @dev.jobs_command && defined?(GemStack::Jobs) && @config.respond_to?(:jobs)
-        return false unless @config.jobs.adapter.to_s == "postgres"
+        return false unless %w[database postgres].include?(@config.jobs.adapter.to_s)
 
         Dir.glob(@root.join("db/migrations/*_create_gemstack_jobs.rb").to_s).any?
       end

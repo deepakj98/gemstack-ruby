@@ -27,7 +27,7 @@ class AppGeneratorTest < Minitest::Test
 
     expected = %w[
       .env.example .gitignore .ruby-version .tool-versions Gemfile README.md app/controllers/application_controller.rb bin/gemstack config.ru
-      config/app.rb config/environments/development.rb config/environments/production.rb
+      config/app.rb config/database.yml config/environments/development.rb config/environments/production.rb
       config/environments/test.rb config/puma.rb config/routes.rb db/migrations/.keep db/seeds.rb
       frontend/app/globals.css frontend/app/layout.tsx frontend/app/page.tsx frontend/app/providers.tsx
       frontend/lib/gemstack/client.ts frontend/next-env.d.ts frontend/next.config.ts frontend/package.json
@@ -60,6 +60,43 @@ class AppGeneratorTest < Minitest::Test
     assert_includes File.read(File.join(root, "frontend/app/layout.tsx")), %(title: "MyShop")
     assert_equal "my-shop-frontend", JSON.parse(File.read(File.join(root, "frontend/package.json")))["name"]
     refute_includes File.read(File.join(root, "frontend/app/page.tsx")), "<%"
+  end
+
+  def test_sqlite_is_the_default_database
+    require "gemstack/db" # only to check the generated file parses (the CLI itself never loads it)
+    root = generate("my-shop")
+    yml = File.read(File.join(root, "config/database.yml"))
+
+    assert_includes yml, "adapter: sqlite3"
+    assert_includes yml, "database: db/development.sqlite3"
+    assert_includes yml, %(<%= ENV.fetch("GEMSTACK_MAX_THREADS", 5) %>), "runtime ERB is kept"
+    assert_match(/^gem "sqlite3", "~> 2\.0"/, File.read(File.join(root, "Gemfile")))
+    assert_includes File.read(File.join(root, ".gitignore")), "/db/*.sqlite3\n"
+    settings = GemStack::DB::Configuration.from_hash(
+      YAML.safe_load(ERB.new(yml).result, aliases: true)["test"], root: root
+    )
+
+    assert_equal({ adapter: "sqlite", database: File.join(root, "db/test.sqlite3"), max_connections: 5 }, settings)
+  end
+
+  def test_database_choices
+    { "postgresql" => ["adapter: postgresql", %(gem "pg")], "mysql" => ["adapter: mysql2", %(gem "mysql2")],
+      "trilogy" => ["adapter: trilogy", %(gem "trilogy")] }.each do |choice, (adapter, gem_line)|
+      root = generate("my-shop", database: choice)
+
+      assert_includes File.read(File.join(root, "config/database.yml")), adapter
+      assert_includes File.read(File.join(root, "config/database.yml")), "database: my_shop_test"
+      assert_includes File.read(File.join(root, "Gemfile")), gem_line
+      teardown
+    end
+    assert_raises(Thor::Error) { generate("x", database: "oracle") }
+  end
+
+  def test_skip_database_has_no_database_yml
+    root = generate(skip_database: true)
+
+    refute File.exist?(File.join(root, "config/database.yml"))
+    refute_includes File.read(File.join(root, "Gemfile")), "sqlite3"
   end
 
   def test_gemfile_uses_checkout_when_available

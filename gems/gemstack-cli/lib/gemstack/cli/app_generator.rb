@@ -6,6 +6,12 @@ module GemStack
     # framework infrastructure and deliberately no business resources.
     class AppGenerator < Generator
       NAME = /\A[a-z][a-z0-9_-]*\z/
+      # `--database` values (Rails' names) and aliases.
+      DATABASES = { "sqlite3" => "sqlite3", "sqlite" => "sqlite3", "postgresql" => "postgresql",
+                    "postgres" => "postgresql", "pg" => "postgresql", "mysql2" => "mysql2", "mysql" => "mysql2",
+                    "trilogy" => "trilogy" }.freeze
+      DRIVERS = { "sqlite3" => ["sqlite3", "~> 2.0"], "postgresql" => ["pg", "~> 1.5"],
+                  "mysql2" => ["mysql2", "~> 0.5"], "trilogy" => ["trilogy", "~> 2.9"] }.freeze
 
       # The gems/ directory of the GemStack checkout this CLI runs from, if any.
       CHECKOUT = File.expand_path("../../../..", __dir__)
@@ -29,10 +35,27 @@ module GemStack
       def frontend? = !@options[:skip_frontend]
       def database? = !@options[:skip_database]
 
+      # sqlite3 (default), postgresql, mysql2 or trilogy.
+      def database_adapter
+        @database_adapter ||= DATABASES.fetch(@options[:database].to_s.downcase.then do |d|
+          d.empty? ? "sqlite3" : d
+        end) do
+          raise Thor::Error,
+                "Unknown --database #{@options[:database].inspect}. Use: sqlite3, postgresql, mysql2, trilogy"
+        end
+      end
+
+      def driver_gem = DRIVERS.fetch(database_adapter).first
+      def driver_version = DRIVERS.fetch(database_adapter).last
+      def database_name = name.tr("-", "_")
+
       def run
         validate!
+        database_adapter if database? # fail early on an unknown --database
         @output.puts("Creating GemStack application #{name} in #{destination}")
-        render_directory("app", destination, skip: ->(rel) { !database? && rel.start_with?("db/") })
+        render_directory("app", destination, skip: lambda { |rel|
+          !database? && (rel.start_with?("db/") || rel == "config/database.yml.tt")
+        })
         render_directory("frontend", File.join(destination, "frontend")) if frontend?
         install unless @options[:skip_install]
         git_init unless @options[:skip_git]
@@ -65,14 +88,14 @@ module GemStack
                  "--no-audit")
       end
 
-      # Best effort: a missing or password-protected PostgreSQL shouldn't fail `new`.
+      # Best effort: a missing or password-protected database server shouldn't fail `new`.
       def create_database
         @output.puts("  #{"run".rjust(9)}  gemstack db:create")
         ok = unbundled { system("bin/gemstack", "db:create", chdir: destination, out: File::NULL, err: File::NULL) }
         return if ok
 
         @output.puts("  #{"warning".rjust(9)}  couldn't create the database — " \
-                     "set DATABASE_URL in .env, then run `gemstack db:create`")
+                     "check config/database.yml (or set DATABASE_URL in .env), then run `gemstack db:create`")
       end
 
       def git_init

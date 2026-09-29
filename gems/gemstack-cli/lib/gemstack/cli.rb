@@ -53,7 +53,9 @@ module GemStack
     method_option :skip_install, type: :boolean, default: false, desc: "Don't run bundle install / npm install"
     method_option :skip_git, type: :boolean, default: false, desc: "Don't initialise a git repository"
     method_option :skip_frontend, type: :boolean, default: false, desc: "API only: no Next.js frontend"
-    method_option :skip_database, type: :boolean, default: false, desc: "No PostgreSQL / gemstack-db"
+    method_option :database, aliases: "-d", type: :string, default: "sqlite3",
+                             desc: "sqlite3 (default), postgresql, mysql2 or trilogy"
+    method_option :skip_database, type: :boolean, default: false, desc: "No database / gemstack-db"
     method_option :gemstack_path, type: :string, desc: "Use GemStack from a local checkout (its gems/ directory)"
     def new(name)
       AppGenerator.new(name, options.transform_keys(&:to_sym)).run

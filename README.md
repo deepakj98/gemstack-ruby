@@ -25,11 +25,11 @@ gemstack dev          # → http://localhost:3000
 
 > **Status: Phases 1–7 complete — see [ROADMAP.md](ROADMAP.md).**
 > Built: HTTP layer, router, middleware, controllers, single-origin dev server,
-> Next.js + TypeScript template, PostgreSQL models (Sequel), migrations,
+> Next.js + TypeScript template, models on SQLite/PostgreSQL/MySQL (Sequel, `config/database.yml`), migrations,
 > validation, serializers, TypeScript/OpenAPI contract, `generate resource`.
 > Phase 3: compression, ETags/304, pagination, `GemStack.cache`, YJIT by default, benchmarks.
-> Phase 4: background jobs on PostgreSQL (transactional, SKIP LOCKED, NOTIFY), Sidekiq adapter.
-> Phase 5: realtime — `GemStack.broadcast` → Server-Sent Events, PostgreSQL fan-out, `useRealtime`.
+> Phase 4: background jobs in the app's database (transactional, SKIP LOCKED, NOTIFY on PostgreSQL), Sidekiq adapter.
+> Phase 5: realtime — `GemStack.broadcast` → Server-Sent Events, PostgreSQL or Redis fan-out, `useRealtime`.
 > Phase 6: `gemstack add auth` (Argon2id, cookie sessions + API tokens, reset/verification emails,
 > Next.js pages), policies, mail, `gemstack add storage` (direct uploads to disk/S3).
 > Phase 7: dev error pages, `/api/docs`, `gemstack doctor`, `gemstack generate deploy` (Docker, Caddy, Procfile).
@@ -105,8 +105,9 @@ const created: Product = await products.create({ name: "Lamp", price: "9.99" });
 
 ## Installation
 
-Requirements: **Ruby ≥ 4.0** (developed on 4.0.7), Node.js ≥ 20, npm, and
-PostgreSQL (unless `--skip-database`).
+Requirements: **Ruby ≥ 4.0** (developed on 4.0.7), Node.js ≥ 20 and npm. Apps
+use SQLite by default; `--database=postgresql` or `--database=mysql2` for a
+server database ([databases](docs/database.md)).
 
 ```bash
 gem install gemstack
@@ -137,8 +138,8 @@ gems/
   gemstack-cache/    GemStack.cache: memory, null and Redis stores
   gemstack-schema/   shared types, request schemas, serializers
   gemstack-http/     router, middleware, controllers, params, JSON (Rack 3)
-  gemstack-db/       PostgreSQL via Sequel: models, migrations, db tasks (optional)
-  gemstack-jobs/     background jobs: PostgreSQL queue, adapters, worker
+  gemstack-db/       SQLite/PostgreSQL/MySQL via Sequel: models, migrations, db tasks (optional)
+  gemstack-jobs/     background jobs: database queue, adapters, worker
   gemstack-realtime/ GemStack.broadcast → Server-Sent Events (optional: gemstack add realtime)
   gemstack-mail/     mailers, ERB templates, SMTP/log/test delivery, deliver_later
   gemstack-storage/  disk and S3 storage, signed URLs, direct uploads (optional: gemstack add storage)
@@ -177,7 +178,7 @@ bundle exec rake bench
 [Deployment](docs/deployment.md) ·
 [Resource generation](docs/resource-generation.md)
 
-[Models & database](docs/models.md) · [Validation](docs/validation.md) ·
+[Databases](docs/database.md) · [Models](docs/models.md) · [Validation](docs/validation.md) ·
 [Serialization](docs/serialization.md) · [Caching](docs/caching.md) ·
 [Background jobs](docs/background-jobs.md) · [Realtime](docs/realtime.md) ·
 [Authentication](docs/authentication.md) · [Authorization](docs/authorization.md) ·

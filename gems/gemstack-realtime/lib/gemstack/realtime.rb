@@ -15,16 +15,19 @@ module GemStack
   #
   # Transport: Server-Sent Events on `<api_path>/realtime`, one multiplexed
   # stream per browser tab, served off the server's request threads. Fan-out
-  # between processes goes through a broker (PostgreSQL LISTEN/NOTIFY by
-  # default). Channels are deny-by-default: declare them in config/channels.rb.
+  # between processes goes through a broker (PostgreSQL LISTEN/NOTIFY, or
+  # Redis). Channels are deny-by-default: declare them in config/channels.rb.
   module Realtime
     class Config < Settings
       setting :path, default: -> { "#{GemStack.config.http.api_path}/realtime" }
-      # :postgres (default with gemstack-db), :memory (single process),
-      # :redis, :test (default in tests), or a broker object.
+      # :postgres (default when the app's database is PostgreSQL), :redis
+      # (set it for MySQL/SQLite apps with more than one process, e.g. a jobs
+      # worker broadcasting to the web server), :memory (single process; the
+      # default otherwise), :test (default in tests), or a broker object.
       setting :broker, default: lambda {
         if GemStack.env.test? then :test
-        elsif defined?(GemStack::DB) then :postgres
+        elsif defined?(GemStack::DB) && GemStack::DB.type == :postgres then :postgres
+        elsif ENV.fetch("REDIS_URL", "") != "" then :redis
         else :memory
         end
       }

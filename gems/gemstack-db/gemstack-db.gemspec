@@ -6,7 +6,7 @@ version = "0.1.0"
 Gem::Specification.new do |spec|
   spec.name = "gemstack-db"
   spec.version = version
-  spec.summary = "GemStack database: Sequel models, migrations and PostgreSQL defaults"
+  spec.summary = "GemStack database: Sequel models and migrations for SQLite, PostgreSQL and MySQL"
   spec.authors = ["Shoaib Malik"]
   spec.email = ["gemstack26@gmail.com"]
   spec.license = "MIT"
@@ -22,6 +22,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "gemstack-core", version
   spec.add_dependency "gemstack-schema", version
-  spec.add_dependency "pg", ">= 1.5"
   spec.add_dependency "sequel", "~> 5.80"
+  # The driver is the app's choice (like Rails): gem "pg", "mysql2", "trilogy" or "sqlite3".
 end

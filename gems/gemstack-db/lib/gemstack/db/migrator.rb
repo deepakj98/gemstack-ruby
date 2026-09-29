@@ -61,7 +61,7 @@ module GemStack
       def pending? = !pending.empty?
 
       def applied
-        return [] unless db.table_exists?(:schema_migrations)
+        return [] if DB.table_missing?(db, :schema_migrations)
 
         db[:schema_migrations].select_map(:filename)
       end

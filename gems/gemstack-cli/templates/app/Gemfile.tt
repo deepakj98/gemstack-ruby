@@ -26,6 +26,9 @@ gem "gemstack-db", "~> <%= version %>"
 gem "gemstack-jobs", "~> <%= version %>"
 <% end -%>
 gem "puma", ">= 6.4"
+<% if database? -%>
+gem "<%= driver_gem %>", "<%= driver_version %>" # the <%= database_adapter %> driver (config/database.yml)
+<% end -%>
 
 # Any gem works here as usual, e.g.:
 # gem "brotli"         # Brotli compression (gzip is used without it)

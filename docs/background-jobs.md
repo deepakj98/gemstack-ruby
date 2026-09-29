@@ -1,6 +1,6 @@
 # Background jobs
 
-GemStack jobs run on **PostgreSQL** by default — no Redis, no extra service
+GemStack jobs run in **the app's own database** by default (SQLite, PostgreSQL or MySQL) — no Redis, no extra service
 (DECISIONS D-040). Work only becomes asynchronous when you ask for it with
 `perform_later`.
 
@@ -53,10 +53,13 @@ order = GemStack.transaction do
 end
 ```
 
-If the order fails to save, no receipt job is ever created. Workers are woken
-by PostgreSQL `NOTIFY`, which is also transactional, so the job starts within
-milliseconds of the commit. (The `:async` and `:sidekiq` adapters wait for
-the commit too.)
+If the order fails to save, no receipt job is ever created. On PostgreSQL,
+workers are woken by `NOTIFY`, which is also transactional, so the job starts
+within milliseconds of the commit; on MySQL and SQLite they poll every second
+(`config.jobs.poll_interval`). Workers claim jobs with `FOR UPDATE SKIP LOCKED`
+on PostgreSQL and MySQL 8, and with SQLite's write lock on SQLite, so a job is
+never run by two workers at once (DECISIONS D-063). (The `:async` and
+`:sidekiq` adapters wait for the commit too.)
 
 ## Retries and failures
 

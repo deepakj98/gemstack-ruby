@@ -1,6 +1,6 @@
 # gemstack-db
 
-GemStack database: Sequel models, migrations and PostgreSQL defaults.
+GemStack database: Sequel models and migrations for SQLite, PostgreSQL and MySQL.
 
 Part of [GemStack](https://github.com/gemstack-rb/gemstack), a modular Ruby API framework for Next.js
 applications. All GemStack gems are developed together in that repository and released with the same
@@ -16,7 +16,7 @@ gem "gemstack-db", "~> 0.1"
 
 ## Documentation
 
-- [Guide](https://github.com/gemstack-rb/gemstack/blob/main/docs/models.md)
+- [Guide](https://github.com/gemstack-rb/gemstack/blob/main/docs/database.md)
 - [All guides](https://github.com/gemstack-rb/gemstack/tree/main/docs) ·
   [Architecture](https://github.com/gemstack-rb/gemstack/blob/main/ARCHITECTURE.md)
 
