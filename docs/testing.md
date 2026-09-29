@@ -84,12 +84,16 @@ End-to-end check of the generators — creates an app with every field type and
 the known edge cases, then runs its Ruby tests, `tsc` and `next build`:
 
 ```bash
-GEMSTACK_E2E_DATABASE_URL=postgres://user:pass@localhost:5432 script/e2e
+script/e2e                                     # SQLite
+GEMSTACK_E2E_DATABASE=postgresql GEMSTACK_E2E_DATABASE_URL=postgres://user:pass@localhost:5432 script/e2e
+GEMSTACK_E2E_DATABASE=mysql2 GEMSTACK_E2E_DATABASE_URL=mysql2://root:pass@127.0.0.1:3306 script/e2e
 ```
 
-Database tests need PostgreSQL:
-`GEMSTACK_TEST_DATABASE_URL=postgres://user:pass@localhost/gemstack_test bundle exec rake test:gemstack-db`
-(they skip without it).
+Database tests run against `GEMSTACK_TEST_DATABASE_URL` (they skip without
+it). `bundle exec rake test:databases` runs the database, jobs and auth suites
+on SQLite, and also on PostgreSQL and MySQL (mysql2 and trilogy) when
+`GEMSTACK_TEST_DATABASE_URL=postgres://…` and `GEMSTACK_TEST_MYSQL_URL=mysql2://…`
+are set; the default `rake` includes it.
 
 The suites cover the settings DSL, env files, logger, inflector, errors, error mapping,
 types, schemas, serializers, models, migrations, constraint-error mapping, transactional tests,

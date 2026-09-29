@@ -63,7 +63,36 @@ task :bench do
   Dir["benchmarks/*_bench.rb"].each { |file| ruby file }
 end
 
-task default: %i[test lint]
+# The suites that touch the database, run once per adapter (DECISIONS D-062):
+# SQLite always; PostgreSQL with GEMSTACK_TEST_DATABASE_URL; MySQL (mysql2 and
+# trilogy) with GEMSTACK_TEST_MYSQL_URL=mysql2://user:pass@127.0.0.1:3306/gemstack_test.
+DATABASE_SUITES = %w[test:gemstack-db test:gemstack-jobs test:gemstack-auth].freeze
+
+desc "Run the database-backed suites on SQLite, PostgreSQL and MySQL (where configured)"
+task "test:databases" do
+  require "tmpdir"
+  Dir.mktmpdir("gemstack-sqlite") do |dir|
+    urls = { "sqlite3" => "sqlite3://#{dir}/gemstack_test.sqlite3" }
+    if ENV["GEMSTACK_TEST_DATABASE_URL"].to_s.start_with?("postgres")
+      urls["postgresql"] =
+        ENV.fetch("GEMSTACK_TEST_DATABASE_URL", nil)
+    end
+    if (mysql = ENV.fetch("GEMSTACK_TEST_MYSQL_URL", nil)).to_s != ""
+      urls["mysql2"] = mysql.sub(/\A\w+:/, "mysql2:")
+      urls["trilogy"] = mysql.sub(/\A\w+:/, "trilogy:")
+    end
+    urls.each do |adapter, url|
+      puts "\n== #{adapter}"
+      sh({ "GEMSTACK_TEST_DATABASE_URL" => url }, "bundle", "exec", "rake", *DATABASE_SUITES)
+    end
+    skipped = %w[postgresql mysql2] - urls.keys
+    if skipped.any?
+      puts "\n(not run on #{skipped.join(", ")}: set GEMSTACK_TEST_DATABASE_URL / GEMSTACK_TEST_MYSQL_URL)"
+    end
+  end
+end
+
+task default: %i[test test:databases lint]
 
 desc "Set the version of every GemStack gem: rake version:set[0.2.0]"
 task "version:set", [:version] do |_, args|

@@ -180,6 +180,16 @@ documented before the next begins.
   production mode behind Caddy on https://localhost — migrations, healthy API, jobs worker, Next.js,
   signup with a `__Host-` Secure cookie, HSTS, `/api/docs` 404; `doctor --production` ran in the container.
 
+## Before 0.1.0 — databases  *(complete)*
+
+- [x] Rails-style `config/database.yml` (ERB, per environment); `DATABASE_URL` / `TEST_DATABASE_URL` override it
+- [x] SQLite (default for `gemstack new`), PostgreSQL, MySQL 8 via `mysql2` or `trilogy`; `--database=`
+- [x] Portable migrations (PostgreSQL type names mapped), UTC timestamps, per-adapter `db:create`/`db:drop`
+      and constraint-error mapping
+- [x] Job queue, auth tokens, doctor and deploy files work on every adapter; realtime uses Redis outside PostgreSQL
+- [x] `rake test:databases`: db, jobs and auth suites on SQLite, PostgreSQL, mysql2 and trilogy;
+      `script/e2e` per adapter (`GEMSTACK_E2E_DATABASE`)
+
 ## Beyond 1.0 (ideas)
 
 - OAuth / social login, two-factor authentication; attachment models and image variants

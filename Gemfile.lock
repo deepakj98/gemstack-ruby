@@ -32,7 +32,6 @@ PATH
     gemstack-db (0.1.0)
       gemstack-core (= 0.1.0)
       gemstack-schema (= 0.1.0)
-      pg (>= 1.5)
       sequel (~> 5.80)
     gemstack-dev (0.1.0)
       gemstack-core (= 0.1.0)
@@ -110,7 +109,10 @@ GEM
       net-pop
       net-smtp
     mini_mime (1.1.5)
+    mini_portile2 (2.8.9)
     minitest (5.26.1)
+    mysql2 (0.5.7)
+      bigdecimal
     net-imap (0.6.7)
       date
       net-protocol
@@ -166,8 +168,12 @@ GEM
       logger (>= 1.7.0)
       rack (>= 3.2.0)
       redis-client (>= 0.29.0)
+    sqlite3 (2.9.6)
+      mini_portile2 (~> 2.8.0)
     thor (1.5.0)
     timeout (0.6.1)
+    trilogy (2.13.0)
+      bigdecimal
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
     unicode-emoji (4.2.0)
@@ -197,12 +203,16 @@ DEPENDENCIES
   gemstack-schema!
   gemstack-storage!
   minitest (~> 5.25)
+  mysql2 (~> 0.5)
   oj (~> 3.16)
+  pg (~> 1.5)
   rack-test (~> 2.2)
   rake (~> 13.0)
   redis-client (~> 0.25)
   rubocop (~> 1.81)
   sidekiq (~> 8.1)
+  sqlite3 (~> 2.0)
+  trilogy (~> 2.9)
 
 BUNDLED WITH
    2.7.1

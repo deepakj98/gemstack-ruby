@@ -32,8 +32,8 @@ module AuthDB
     db.drop_table?(:auth_tokens, :sessions, :users)
     db.create_table(:users) do
       primary_key :id, type: :Bignum
-      column :email, :text, null: false, unique: true
-      column :password_digest, :text, null: false
+      String :email, null: false, unique: true
+      String :password_digest, null: false
       column :email_verified_at, :timestamptz
       column :created_at, :timestamptz, null: false
       column :updated_at, :timestamptz, null: false
@@ -41,9 +41,9 @@ module AuthDB
     db.create_table(:sessions) do
       primary_key :id, type: :Bignum
       foreign_key :user_id, :users, type: :Bignum, null: false, on_delete: :cascade, index: true
-      column :token_digest, :text, null: false, unique: true
+      String :token_digest, size: 64, null: false, unique: true
       column :ip, :inet
-      column :user_agent, :text
+      String :user_agent
       column :created_at, :timestamptz, null: false
       column :last_seen_at, :timestamptz, null: false
       column :expires_at, :timestamptz, null: false, index: true
@@ -51,10 +51,10 @@ module AuthDB
     db.create_table(:auth_tokens) do
       primary_key :id, type: :Bignum
       foreign_key :user_id, :users, type: :Bignum, null: false, on_delete: :cascade, index: true
-      column :purpose, :text, null: false
-      column :token_digest, :text, null: false, unique: true
-      column :name, :text
-      column :email, :text
+      String :purpose, size: 30, null: false
+      String :token_digest, size: 64, null: false, unique: true
+      String :name
+      String :email
       column :created_at, :timestamptz, null: false
       column :last_used_at, :timestamptz
       column :expires_at, :timestamptz

@@ -18,13 +18,13 @@ module GemStack
     class Worker
       attr_reader :id
 
-      def initialize(store: Adapters::Postgres.new, queues: Jobs.config.queues, concurrency: Jobs.config.concurrency,
+      def initialize(store: Adapters::Database.new, queues: Jobs.config.queues, concurrency: Jobs.config.concurrency,
                      poll_interval: Jobs.config.poll_interval, lock_timeout: Jobs.config.lock_timeout,
                      shutdown_timeout: Jobs.config.shutdown_timeout)
         @store = store
         @queues = Array(queues).map(&:to_s)
         @concurrency = concurrency
-        @poll_interval = poll_interval
+        @poll_interval = poll_interval || (store.respond_to?(:postgres?) && store.postgres? ? 5 : 1)
         @lock_timeout = lock_timeout
         @shutdown_timeout = shutdown_timeout
         @id = "#{Socket.gethostname}:#{Process.pid}:#{SecureRandom.hex(3)}"
@@ -41,7 +41,7 @@ module GemStack
         @running = true
         GemStack.logger.info("jobs worker started", worker: @id, queues: @queues.join(","), concurrency: @concurrency)
         @threads = Array.new(@concurrency) { |i| Thread.new { work_loop(i) } }
-        @listener = Thread.new { listen_loop }
+        @listener = Thread.new { listen_loop } if @store.respond_to?(:postgres?) && @store.postgres?
         @reaper = Thread.new { reap_loop }
         self
       end
@@ -112,7 +112,7 @@ module GemStack
       end
 
       def listen_loop
-        @store.db.listen(Adapters::Postgres::CHANNEL, loop: ->(_conn) { throw :stop unless @running },
+        @store.db.listen(Adapters::Database::CHANNEL, loop: ->(_conn) { throw :stop unless @running },
                                                       timeout: @poll_interval) { wake }
       rescue Sequel::DatabaseConnectionError => e
         GemStack.logger.warn("jobs worker: LISTEN failed, falling back to polling", error: e.message)

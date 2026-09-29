@@ -8,7 +8,7 @@ module ModelFixtures
     return if @installed
 
     db = GemStack::DB.connection
-    db.drop_table?(:mt_products, :mt_categories, cascade: true)
+    db.drop_table?(:mt_products, :mt_categories, cascade: GemStack::DB.postgres?)
     db.create_table(:mt_categories) do
       primary_key :id, type: :Bignum
       String :name, null: false, unique: true
@@ -118,7 +118,11 @@ class ModelTest < Minitest::Test
       db[:mt_products].insert(name: "x", price: 1, category_id: 999, created_at: Time.now, updated_at: Time.now)
     end
 
-    assert_equal({ "category_id" => ["does not exist"] }, error.errors)
+    if GemStack::DB.sqlite? # SQLite doesn't say which side of the key failed
+      assert_equal 409, error.status
+    else
+      assert_equal({ "category_id" => ["does not exist"] }, error.errors)
+    end
     category = MtCategory.create(name: "Home")
     MtProduct.create(name: "Lamp", price: 1, category_id: category.id)
     error = render_error { category.destroy }
@@ -170,14 +174,15 @@ class ModelTest < Minitest::Test
     assert_equal "9.5", MtProductSerializer.serialize(product)[:price]
   end
 
-  def test_jsonb_columns_round_trip
+  def test_json_fields_round_trip_on_every_adapter
     db.create_table!(:mt_documents) do
       primary_key :id
       column :data, :jsonb, null: false
     end
-    db[:mt_documents].insert(data: Sequel.pg_jsonb_wrap({ "tags" => ["a"], "n" => 1 }))
+    document_class = Class.new(GemStack::Model(:mt_documents)) { field :data, :json, null: false }
+    document = document_class.create(data: { "tags" => ["a"], "n" => 1 })
 
-    assert_equal({ "tags" => ["a"], "n" => 1 }, db[:mt_documents].first[:data].to_h)
+    assert_equal({ "tags" => ["a"], "n" => 1 }, document_class[document.id].data.to_h)
   ensure
     db.drop_table?(:mt_documents)
   end

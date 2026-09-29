@@ -43,7 +43,7 @@ config.mail.queue = "mailers"               # deliver_later's queue
 ```
 
 `deliver_later` uses `GemStack::Jobs` (DECISIONS D-047): failed deliveries are
-retried with backoff, and — with the PostgreSQL queue — an email enqueued in a
+retried with backoff, and — with the database queue — an email enqueued in a
 transaction that rolls back is never sent.
 
 ## Testing

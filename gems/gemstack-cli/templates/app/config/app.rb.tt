@@ -23,7 +23,7 @@ GemStack.configure do |config|
   # config.filter_parameters += %w[iban]           # masked in logs
 <% if database? -%>
   #
-  # config.db.url = ENV["DATABASE_URL"]            # default: postgres:///<name>_<env> (TEST_DATABASE_URL in test)
+  # Connection: config/database.yml (DATABASE_URL / TEST_DATABASE_URL override it).
   # config.db.pool_size = 5                        # default: GEMSTACK_MAX_THREADS (one per Puma thread)
   # config.db.statement_timeout = 5_000            # ms
 <% end -%>

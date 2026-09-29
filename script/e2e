@@ -3,24 +3,33 @@
 # generates resources that cover the edge cases, then runs the generated Ruby
 # tests, the TypeScript typecheck and a Next.js production build.
 #
-#   GEMSTACK_E2E_DATABASE_URL=postgres://user:pass@localhost:5432 script/e2e
+#   script/e2e                                                         # SQLite (no server needed)
+#   GEMSTACK_E2E_DATABASE=postgresql GEMSTACK_E2E_DATABASE_URL=postgres://user:pass@localhost:5432 script/e2e
+#   GEMSTACK_E2E_DATABASE=mysql2 GEMSTACK_E2E_DATABASE_URL=mysql2://root:pass@127.0.0.1:3306 script/e2e
 #
-# Needs PostgreSQL (the URL is a server; databases e2e_app_* are created and
-# dropped), Node.js and network access for npm on the first run.
+# For PostgreSQL/MySQL the URL is a server (no database name); databases
+# e2e_app_* are created and dropped. Needs Node.js and network access for npm
+# on the first run.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SERVER="${GEMSTACK_E2E_DATABASE_URL:?set GEMSTACK_E2E_DATABASE_URL to a PostgreSQL server URL (no database name)}"
+DATABASE="${GEMSTACK_E2E_DATABASE:-sqlite3}"
+if [ "$DATABASE" != "sqlite3" ]; then
+  SERVER="${GEMSTACK_E2E_DATABASE_URL:?set GEMSTACK_E2E_DATABASE_URL to a $DATABASE server URL (no database name)}"
+fi
 WORK="$(mktemp -d)"
 APP="$WORK/e2e_app"
 trap 'rm -rf "$WORK"' EXIT
 
 step() { printf "\n\033[1m== %s\033[0m\n" "$*"; }
 
-step "gemstack new"
-"$ROOT/bin/gemstack" new "$APP" --skip-git > "$WORK/new.log" 2>&1 || { cat "$WORK/new.log"; exit 1; }
+step "gemstack new --database=$DATABASE"
+"$ROOT/bin/gemstack" new "$APP" --skip-git --database="$DATABASE" > "$WORK/new.log" 2>&1 || { cat "$WORK/new.log"; exit 1; }
 cd "$APP"
-printf "DATABASE_URL=%s/e2e_app_development\nTEST_DATABASE_URL=%s/e2e_app_test\n" "$SERVER" "$SERVER" > .env
+grep -q "adapter: $DATABASE" config/database.yml || { echo "config/database.yml doesn't use $DATABASE"; exit 1; }
+if [ -n "${SERVER:-}" ]; then
+  printf "DATABASE_URL=%s/e2e_app_development\nTEST_DATABASE_URL=%s/e2e_app_test\n" "$SERVER" "$SERVER" > .env
+fi
 bin/gemstack db:drop > /dev/null 2>&1 || true
 bin/gemstack db:create
 

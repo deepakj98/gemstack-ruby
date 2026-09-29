@@ -2,10 +2,10 @@
 
 require "test_helper"
 
-class PostgresQueueTest < Minitest::Test
+class DatabaseQueueTest < Minitest::Test
   include JobsDB
 
-  def store = @store ||= GemStack::Jobs::Adapters::Postgres.new(db: JobsDB.db)
+  def store = @store ||= GemStack::Jobs::Adapters::Database.new(db: JobsDB.db)
   def rows = JobsDB.db[:gemstack_jobs]
 
   def enqueue(klass, *, **options)
@@ -20,7 +20,8 @@ class PostgresQueueTest < Minitest::Test
     row = rows.first(id: id)
 
     assert_equal ["RecordingJob", "recording", 100, 0], row.values_at(:job_class, :queue, :priority, :attempts)
-    assert_equal [1, { "k" => [true, nil] }], row[:args].to_a
+    args = row[:args].is_a?(String) ? JSON.parse(row[:args]) : row[:args].to_a # jsonb on PostgreSQL, JSON text elsewhere
+    assert_equal [1, { "k" => [true, nil] }], args
   end
 
   def test_claim_order_priority_then_run_at
@@ -93,7 +94,7 @@ class PostgresQueueTest < Minitest::Test
   def test_stale_locks_are_released
     id = enqueue(RecordingJob)
     store.claim(["*"], "dead-worker")
-    rows.where(id: id).update(locked_at: Sequel.lit("now() - interval '2 hours'"))
+    rows.where(id: id).update(locked_at: Time.now - 7200)
 
     assert_equal 1, store.release_stale(3600)
     assert_equal id, store.claim(["*"], "w")["id"]
@@ -112,10 +113,12 @@ end
 class WorkerTest < Minitest::Test
   include JobsDB
 
-  def store = @store ||= GemStack::Jobs::Adapters::Postgres.new(db: JobsDB.db)
+  def store = @store ||= GemStack::Jobs::Adapters::Database.new(db: JobsDB.db)
 
   def worker(**)
-    @worker = GemStack::Jobs::Worker.new(store: store, queues: ["*"], concurrency: 2, poll_interval: 5,
+    # PostgreSQL: NOTIFY wakes the worker, so a slow poll proves it; elsewhere polling is the mechanism.
+    poll = JobsDB.db.database_type == :postgres ? 5 : 0.2
+    @worker = GemStack::Jobs::Worker.new(store: store, queues: ["*"], concurrency: 2, poll_interval: poll,
                                          lock_timeout: 60, shutdown_timeout: 1, **)
   end
 
@@ -135,7 +138,22 @@ class WorkerTest < Minitest::Test
     yield
   end
 
+  def test_polling_picks_up_jobs_without_notify
+    skip "PostgreSQL wakes workers with NOTIFY (next test)" if JobsDB.db.database_type == :postgres
+    w = GemStack::Jobs::Worker.new(store: store, queues: ["*"], concurrency: 2)
+    w.start
+    sleep 0.2
+    started = Time.now
+    enqueue(RecordingJob, "polled")
+
+    assert_equal [:performed, ["polled"], 1], Timeout.timeout(4) { RECORD.pop }
+    assert_operator Time.now - started, :<, 2.5, "the 1 s poll picks it up"
+  ensure
+    w&.stop
+  end
+
   def test_notify_wakes_idle_workers_immediately
+    skip "NOTIFY is PostgreSQL-only; other databases poll" unless JobsDB.db.database_type == :postgres
     worker.start
     sleep 0.3 # workers are idle, waiting up to poll_interval (5s)
     started = Time.now

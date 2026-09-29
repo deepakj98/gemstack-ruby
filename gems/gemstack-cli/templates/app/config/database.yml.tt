@@ -1,0 +1,61 @@
+# Database connection (docs/database.md) — the same format as Rails' database.yml.
+# DATABASE_URL (TEST_DATABASE_URL in tests) overrides this file when set, which
+# is what most hosting platforms provide. Adapters: sqlite3, postgresql, mysql2,
+# trilogy (add the matching gem: sqlite3, pg, mysql2, trilogy).
+default: &default
+<% if database_adapter == "sqlite3" -%>
+  adapter: sqlite3
+  pool: <%%= ENV.fetch("GEMSTACK_MAX_THREADS", 5) %>
+
+development:
+  <<: *default
+  database: db/development.sqlite3
+
+test:
+  <<: *default
+  database: db/test.sqlite3
+
+# Keep the file on persistent storage (a volume); or set DATABASE_URL=sqlite3:/data/app.sqlite3.
+production:
+  <<: *default
+  database: db/production.sqlite3
+<% elsif database_adapter == "postgresql" -%>
+  adapter: postgresql
+  pool: <%%= ENV.fetch("GEMSTACK_MAX_THREADS", 5) %>
+  # Without host/username, the local server is used as your OS user.
+  # host: localhost
+  # username: <%= database_name %>
+  # password: <%%= ENV["DATABASE_PASSWORD"] %>
+
+development:
+  <<: *default
+  database: <%= database_name %>_development
+
+test:
+  <<: *default
+  database: <%= database_name %>_test
+
+# In production, DATABASE_URL (postgres://user:password@host:5432/name) usually replaces this.
+production:
+  <<: *default
+  database: <%= database_name %>_production
+<% else -%>
+  adapter: <%= database_adapter %>
+  pool: <%%= ENV.fetch("GEMSTACK_MAX_THREADS", 5) %>
+  host: <%%= ENV.fetch("DATABASE_HOST", "127.0.0.1") %>
+  username: root
+  password: <%%= ENV["DATABASE_PASSWORD"] %>
+
+development:
+  <<: *default
+  database: <%= database_name %>_development
+
+test:
+  <<: *default
+  database: <%= database_name %>_test
+
+# In production, DATABASE_URL (<%= database_adapter %>://user:password@host:3306/name) usually replaces this.
+production:
+  <<: *default
+  database: <%= database_name %>_production
+<% end -%>

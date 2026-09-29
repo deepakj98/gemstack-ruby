@@ -6,7 +6,7 @@ version = "0.1.0"
 Gem::Specification.new do |spec|
   spec.name = "gemstack-jobs"
   spec.version = version
-  spec.summary = "GemStack background jobs: a PostgreSQL queue by default, swappable adapters"
+  spec.summary = "GemStack background jobs: a queue in the app's database by default, swappable adapters"
   spec.authors = ["Shoaib Malik"]
   spec.email = ["gemstack26@gmail.com"]
   spec.license = "MIT"

@@ -8,7 +8,7 @@ module GemStack
 
     class_option :environment, aliases: "-e", type: :string, desc: "Environment (default: GEMSTACK_ENV or development)"
 
-    desc "db:create", "Create the database (config.db.url)"
+    desc "db:create", "Create the database (config/database.yml or DATABASE_URL)"
     def db_create
       with_database do
         result = DB::Tasks.create
@@ -112,8 +112,9 @@ module GemStack
         GemStack.boot! if boot
         yield
       rescue Sequel::DatabaseConnectionError => e
-        abort("Can't connect to #{redact(DB.config.url)}: #{e.message.lines.first.strip}\n" \
-              "Set DATABASE_URL (e.g. in .env) — see docs/models.md.")
+        settings = DB.settings
+        abort("Can't connect to #{DB::Configuration.describe(settings)} (from #{settings[:source]}): " \
+              "#{e.message.lines.first.strip}\nCheck config/database.yml or DATABASE_URL — see docs/database.md.")
       rescue GemStack::Error => e
         abort(e.message)
       end

@@ -49,6 +49,7 @@ module GemStack
         raise ArgumentError, "unknown field option(s) #{unknown.inspect} for #{name}" unless unknown.empty?
 
         @input_schemas = nil
+        serialize_json(name) if Types::CLASS_ALIASES.fetch(type, type).to_sym == :json
         gemstack_fields[name.to_sym] = Field.new(name.to_sym, Types::CLASS_ALIASES.fetch(type, type).to_sym,
                                                  options.freeze)
       end
@@ -99,6 +100,15 @@ module GemStack
 
       private
 
+      # PostgreSQL's jsonb comes back as Hash/Array (pg_json); MySQL JSON and
+      # SQLite text come back as strings, so those fields are (de)serialized.
+      def serialize_json(name)
+        return if db.database_type == :postgres
+
+        plugin :serialization unless respond_to?(:serialization_map)
+        serialize_attributes :json, name unless serialization_map.key?(name.to_sym)
+      end
+
       # For a table that doesn't exist yet, skip Sequel's schema queries: they
       # would fail and log two errors per model (e.g. while `gemstack contract`
       # runs before `db:migrate`). One cheap catalog lookup decides.
@@ -110,9 +120,9 @@ module GemStack
       end
 
       def missing_table?
-        return false unless @dataset && db.database_type == :postgres
+        return false unless @dataset
 
-        db.get(Sequel.function(:to_regclass, db.literal(dataset.first_source_table))).nil?
+        DB.table_missing?(db, dataset.first_source_table)
       rescue Sequel::Error
         false
       end

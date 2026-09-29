@@ -25,7 +25,7 @@ implemented.
                 /                \
           Next.js (TS)       GemStack Ruby API (Rack + Puma)
                                    │
-                              PostgreSQL
+                     SQLite · PostgreSQL · MySQL
 ```
 
 A generated project:
@@ -102,7 +102,7 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 | `gemstack-cache` | `GemStack.cache`: memory (LRU/TTL), null, Redis stores | core |
 | `gemstack-schema` | shared `Types`, request `Schema`s, `Serializer`s (compiled plans) | core, bigdecimal |
 | `gemstack-http` | Rack request/response, router, middleware, controllers (`accepts`/`input`/`returns`, serializer lookup), params, JSON codec, error rendering | core, schema, rack, json |
-| `gemstack-db` | Sequel/PostgreSQL connection + pool, `GemStack::Model`, error mapping, migrations, db tasks, test support | core, schema, sequel, pg |
+| `gemstack-db` | Sequel connection + pool for SQLite/PostgreSQL/MySQL, `config/database.yml`, portable migration types, `GemStack::Model`, error mapping, migrations, db tasks, test support | core, schema, sequel (driver gem chosen by the app) |
 | `gemstack-jobs` | `GemStack::Job`, adapters (postgres/async/inline/test/sidekiq), worker, test helpers | core (+ gemstack-db for :postgres) |
 | `gemstack-realtime` | `GemStack.broadcast`, channels, SSE endpoint (hijack + nio4r), brokers, test helpers | core, schema, http, nio4r |
 | `gemstack-mail` | `GemStack::Mailer`, ERB templates (HTML-escaped), :smtp/:log/:test delivery, `deliver_later` job, test helpers | core, mail, erubi |
@@ -368,7 +368,7 @@ Executor (shared by all adapters): performed | retry (backoff) | discarded | fai
 - `Job` is a thin class API (`queue`, `priority`, `retry_on`, `discard_on`,
   `perform_later`, `set`, `perform_now`); adapters are swappable.
 - The `gemstack_jobs` table appears with the first `generate job`.
-- `gemstack dev` runs a worker when the app uses the PostgreSQL queue, and
+- `gemstack dev` runs a worker when the app uses the database queue, and
   restarts it when `app/` changes.
 
 ## 10. Realtime **[built]** — see docs/realtime.md

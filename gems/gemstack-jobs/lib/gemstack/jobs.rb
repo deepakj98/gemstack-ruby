@@ -20,12 +20,13 @@ module GemStack
   # Delivery is at-least-once: make perform idempotent.
   module Jobs
     class Config < Settings
-      # :postgres (default with gemstack-db), :async (in-process threads),
+      # :database (default with gemstack-db: the app's PostgreSQL, MySQL or
+      # SQLite; :postgres is an alias), :async (in-process threads),
       # :inline (run immediately), :test (record only; default in tests),
       # :sidekiq, or an adapter object responding to #enqueue(payload).
       setting :adapter, default: lambda {
         if GemStack.env.test? then :test
-        elsif defined?(GemStack::DB) then :postgres
+        elsif defined?(GemStack::DB) then :database
         else :async
         end
       }
@@ -35,8 +36,9 @@ module GemStack
       # Worker settings (`gemstack jobs`).
       setting :queues, default: -> { ENV.fetch("GEMSTACK_JOB_QUEUES", "*").split(",").map(&:strip) }
       setting :concurrency, default: -> { Integer(ENV.fetch("GEMSTACK_JOB_CONCURRENCY", 5)) }
-      # Seconds between polls when no NOTIFY arrives (a safety net; NOTIFY wakes workers instantly).
-      setting :poll_interval, default: 5
+      # Seconds between polls. PostgreSQL NOTIFY wakes workers instantly, so
+      # there polling is only a safety net (5 s); MySQL and SQLite rely on it (1 s).
+      setting :poll_interval, default: nil
       # A job locked longer than this is assumed abandoned (worker crashed) and is released.
       # Jobs that legitimately run longer must raise it.
       setting :lock_timeout, default: 30 * 60
@@ -72,7 +74,7 @@ module GemStack
 
       def build_adapter(setting)
         case setting
-        when :postgres, "postgres" then Adapters::Postgres.new
+        when :database, "database", :postgres, "postgres" then Adapters::Database.new
         when :async, "async" then Adapters::Async.new
         when :inline, "inline" then Adapters::Inline.new
         when :test, "test" then Adapters::Test.new
@@ -83,6 +85,9 @@ module GemStack
           setting
         end
       end
+
+      # True when jobs are rows in the application's database (and need a worker).
+      def database_queue?(setting = config.adapter) = %w[database postgres].include?(setting.to_s)
 
       # Instrumentation for metrics/monitoring:
       #   GemStack::Jobs.subscribe(:failed) { |event| Sentry.capture_message(...) }
@@ -133,7 +138,7 @@ require_relative "jobs/executor"
 require_relative "jobs/adapters/inline"
 require_relative "jobs/adapters/test"
 require_relative "jobs/adapters/async"
-require_relative "jobs/adapters/postgres"
+require_relative "jobs/adapters/database"
 require_relative "jobs/adapters/sidekiq"
 
 GemStack::Config.namespace(:jobs, GemStack::Jobs::Config)

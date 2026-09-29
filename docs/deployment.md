@@ -34,9 +34,10 @@ responses, eager loading, HSTS on HTTPS requests, `.env` files not loaded
 gemstack generate deploy
 ```
 
-writes a `Dockerfile` with two targets — `api` (Ruby, Puma; the same image runs
+reads the adapter from `config/database.yml` and writes a `Dockerfile` with two targets — `api` (Ruby, Puma; the same image runs
 `gemstack jobs` and `gemstack db:migrate`) and `web` (Next.js) — plus
-`compose.yaml`, a `Caddyfile`, a `Procfile` and `.dockerignore`. Nothing is
+`compose.yaml` (PostgreSQL or MySQL service, or a volume for the SQLite file;
+Redis for realtime when the database isn't PostgreSQL), a `Caddyfile`, a `Procfile` and `.dockerignore`. Nothing is
 deployed; the files are yours to adapt.
 
 The images run as a non-root user, contain no `.env` files or secrets (all
@@ -126,7 +127,8 @@ and build the frontend with `NEXT_PUBLIC_GEMSTACK_API_URL=https://api.example.co
 - Run `gemstack doctor --production` with the production environment variables.
 
 - `GEMSTACK_ENV=production` and `DATABASE_URL` for the API; `db:migrate` on release.
-- PostgreSQL connections: `WEB_CONCURRENCY × GEMSTACK_MAX_THREADS` per host (pool per worker).
+- Database connections (PostgreSQL/MySQL): `WEB_CONCURRENCY × GEMSTACK_MAX_THREADS` per host (pool per worker).
+- SQLite: one server, the file on a persistent volume (the generated `compose.yaml` mounts `data`), backups.
 - Terminate TLS at the proxy and forward `X-Forwarded-Proto` (HSTS depends on it).
 - `WEB_CONCURRENCY` ≈ CPU cores, `GEMSTACK_MAX_THREADS` 3–5.
 - YJIT is enabled automatically in production (`config.jit`); nothing to set.

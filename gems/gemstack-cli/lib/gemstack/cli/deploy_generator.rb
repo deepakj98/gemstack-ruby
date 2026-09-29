@@ -23,6 +23,45 @@ module GemStack
       end
 
       def mail? = gemfile.match?(/^\s*gem "gemstack-(mail|auth)"/)
+      def database? = gemfile.match?(/^\s*gem "gemstack-db"/)
+      def realtime? = gemfile.match?(/^\s*gem "gemstack-realtime"/)
+
+      # From config/database.yml (production, else the first adapter listed);
+      # apps without one use PostgreSQL, GemStack's original default.
+      def database_adapter
+        path = File.join(@root, "config/database.yml")
+        return "postgresql" unless File.file?(path)
+
+        text = File.read(path)
+        production = text[/^production:.*?(?=^\S|\z)/m].to_s
+        (production[/^\s+adapter:\s*(\w+)/, 1] || text[/^\s+adapter:\s*(\w+)/, 1] || "postgresql")
+          .then { |name| { "postgres" => "postgresql", "sqlite" => "sqlite3", "mysql" => "mysql2" }.fetch(name, name) }
+      end
+
+      def sqlite? = database_adapter == "sqlite3"
+      def mysql? = %w[mysql2 trilogy].include?(database_adapter)
+      def postgresql? = database_adapter == "postgresql"
+      # A Redis for realtime fan-out when the database can't do it (PostgreSQL uses NOTIFY).
+      def redis? = realtime? && !postgresql?
+
+      def build_packages
+        (%w[build-essential libyaml-dev
+            git] + { "postgresql" => ["libpq-dev"], "mysql2" => ["default-libmysqlclient-dev"] }.fetch(database_adapter,
+                                                                                                       [])).join(" ")
+      end
+
+      def runtime_packages
+        (%w[libyaml-0-2
+            curl] + { "postgresql" => ["libpq5"], "mysql2" => ["libmariadb3"] }.fetch(database_adapter, [])).join(" ")
+      end
+
+      def database_url
+        case database_adapter
+        when "sqlite3" then "sqlite3:/data/production.sqlite3"
+        when "postgresql" then "postgres://app:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/app"
+        else "#{database_adapter}://app:${MYSQL_PASSWORD:?set MYSQL_PASSWORD}@db:3306/app"
+        end
+      end
 
       def ruby_version
         pinned = File.file?(File.join(@root, ".ruby-version")) && File.read(File.join(@root, ".ruby-version")).strip

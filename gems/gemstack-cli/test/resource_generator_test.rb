@@ -453,6 +453,35 @@ class DeployGeneratorTest < Minitest::Test
     refute_includes File.read("#{@root}/Procfile"), "worker:"
   end
 
+  def with_database_yml(adapter)
+    FileUtils.mkdir_p("#{@root}/config")
+    File.write("#{@root}/config/database.yml", "default: &default\n  adapter: #{adapter}\nproduction:\n  <<: *default\n")
+  end
+
+  def test_sqlite_app
+    with_database_yml("sqlite3")
+    generate(%(gem "gemstack"\ngem "gemstack-db"\ngem "gemstack-jobs"\ngem "gemstack-realtime"\ngem "gemstack-auth"\n))
+    compose = File.read("#{@root}/compose.yaml")
+
+    assert_includes compose, "DATABASE_URL: sqlite3:/data/production.sqlite3"
+    assert_includes compose, "    volumes: [data:/data]"
+    refute_includes compose, "image: postgres"
+    assert_includes compose, "REDIS_URL: redis://redis:6379/0", "realtime needs Redis without PostgreSQL"
+    refute_includes File.read("#{@root}/Dockerfile"), "libpq"
+  end
+
+  def test_mysql_app
+    with_database_yml("mysql2")
+    generate(%(gem "gemstack"\ngem "gemstack-db"\n))
+    compose = File.read("#{@root}/compose.yaml")
+    dockerfile = File.read("#{@root}/Dockerfile")
+
+    assert_includes compose, "image: mysql:8.4"
+    assert_includes compose, "DATABASE_URL: mysql2://app:${MYSQL_PASSWORD:?set MYSQL_PASSWORD}@db:3306/app"
+    assert_includes dockerfile, "default-libmysqlclient-dev"
+    assert_includes dockerfile, "libmariadb3"
+  end
+
   def test_warns_about_local_gem_paths
     generate(%(path "/src/gemstack/gems" do\n  gem "gemstack"\nend\n))
 

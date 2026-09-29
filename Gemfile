@@ -27,10 +27,14 @@ group :development, :test do
   gem "benchmark" # a bundled (not default) gem since Ruby 4.0
   gem "brotli", "~> 0.8" # optional in apps; tested here
   gem "minitest", "~> 5.25"
+  gem "mysql2", "~> 0.5" # database drivers: tested against every supported adapter
   gem "oj", "~> 3.16"
+  gem "pg", "~> 1.5"
   gem "rack-test", "~> 2.2"
   gem "rake", "~> 13.0"
   gem "redis-client", "~> 0.25" # optional in apps (cache :redis store); tested here
   gem "rubocop", "~> 1.81", require: false
   gem "sidekiq", "~> 8.1" # optional in apps (jobs :sidekiq adapter); tested here
+  gem "sqlite3", "~> 2.0"
+  gem "trilogy", "~> 2.9"
 end

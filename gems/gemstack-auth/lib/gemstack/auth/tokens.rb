@@ -43,11 +43,18 @@ module GemStack
 
         # Uses up a single-use token: deletes and returns its row, atomically,
         # so two concurrent requests can't both use one reset link.
+        # PostgreSQL and SQLite: DELETE … RETURNING; MySQL: lock the row, then delete it.
         def consume(token, purpose:)
           check_purpose!(purpose)
           return nil unless Token.plausible?(token)
 
-          live(token, purpose, Time.now).returning.delete.first
+          scope = live(token, purpose, Time.now)
+          return scope.returning.delete.first if scope.supports_returning?(:delete)
+
+          Auth.db.transaction do
+            row = scope.for_update.first
+            row if row && dataset.where(id: row[:id]).delete.positive?
+          end
         end
 
         def revoke(id, user_id:) = dataset.where(id: id, user_id: user_id).delete.positive?

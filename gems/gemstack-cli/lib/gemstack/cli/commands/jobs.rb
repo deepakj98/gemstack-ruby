@@ -25,7 +25,7 @@ module GemStack
     desc "jobs:status", "Show queued, scheduled, running and failed jobs per queue"
     def jobs_status
       with_jobs(quiet: true) do
-        stats = Jobs::Adapters::Postgres.new.stats
+        stats = Jobs::Adapters::Database.new.stats
         return say("No jobs.") if stats.empty?
 
         rows = stats.sort.map { |queue, s| [queue, s[:ready], s[:scheduled], s[:running], s[:failed]].map(&:to_s) }
@@ -37,7 +37,7 @@ module GemStack
     method_option :limit, type: :numeric, default: 20
     def jobs_failed
       with_jobs(quiet: true) do
-        failed = Jobs::Adapters::Postgres.new.failed(limit: options[:limit])
+        failed = Jobs::Adapters::Database.new.failed(limit: options[:limit])
         return say("No failed jobs.") if failed.empty?
 
         failed.each do |job|
@@ -51,7 +51,7 @@ module GemStack
     desc "jobs:retry [IDS...]", "Put failed jobs back on the queue (all failed jobs without IDS)"
     def jobs_retry(*ids)
       with_jobs(quiet: true) do
-        count = Jobs::Adapters::Postgres.new.retry_failed(ids.empty? ? nil : ids.map(&:to_i))
+        count = Jobs::Adapters::Database.new.retry_failed(ids.empty? ? nil : ids.map(&:to_i))
         say("Re-queued #{count} job(s).")
       end
     end
@@ -59,7 +59,7 @@ module GemStack
     desc "jobs:discard [IDS...]", "Delete failed jobs (all failed jobs without IDS)"
     def jobs_discard(*ids)
       with_jobs(quiet: true) do
-        count = Jobs::Adapters::Postgres.new.discard_failed(ids.empty? ? nil : ids.map(&:to_i))
+        count = Jobs::Adapters::Database.new.discard_failed(ids.empty? ? nil : ids.map(&:to_i))
         say("Deleted #{count} failed job(s).")
       end
     end
