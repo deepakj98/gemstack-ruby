@@ -1,0 +1,21 @@
+# frozen_string_literal: true
+
+# Who may do what with <%= model_name %> records (docs/authorization.md).
+# `user` is the signed-in user (nil when anonymous); `record` the <%= model_name %>.
+# In controllers: authorize!(record) checks "<action>?", policy_scope(<%= model_name %>) filters lists.
+class <%= class_name %> < <%= parent_class %>
+  def index? = !user.nil?
+  def show? = owner?
+  def create? = !user.nil?
+  def update? = owner?
+  def destroy? = owner?
+
+  class Scope < Scope
+    # The <%= model_name %> records the user may list. Adjust to your data model.
+    def resolve = user ? scope.where(user_id: user.id) : scope.where(false)
+  end
+
+  private
+
+  def owner? = !user.nil? && record.respond_to?(:user_id) && record.user_id == user.id
+end

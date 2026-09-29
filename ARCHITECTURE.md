@@ -78,9 +78,9 @@ GemStack is a monorepo of independent gems with one-directional dependencies.
        gemstack-cache ─────────────┘   (umbrella includes it; Redis via optional redis-client)
        gemstack-jobs ──────────────┘   (optional in the Gemfile; :postgres adapter loads gemstack-db on demand)
        gemstack-realtime ── core, schema, http, nio4r   (optional: `gemstack add realtime`)
-
-Planned optional modules: gemstack-auth, -mailer, -storage
-(each depends on core, and on http only if it serves HTTP).
+       gemstack-mail ────── core, mail, erubi          (jobs loaded on demand for deliver_later)
+       gemstack-storage ─── core, http                 (aws-sdk-s3 optional, for :s3)
+       gemstack-auth ────── core, cache, http, db, mail, argon2   (optional: `gemstack add auth`)
 ```
 
 Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
@@ -88,7 +88,7 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 1. **`gemstack-core` depends on nothing** (Ruby stdlib only) and never
    references another GemStack gem.
 2. Dependencies only point down the order
-   `core → cache → schema → http → db → jobs → realtime → contract → dev → cli → umbrella`. **Core never
+   `core → cache → schema → http → db → jobs → realtime → mail → storage → auth → contract → dev → cli → umbrella`. **Core never
    depends on an optional module**, and nothing depends on the umbrella.
 3. **`gemstack-db` never depends on `gemstack-http`**; it gives database errors
    their HTTP meaning through core's `ErrorMapping`.
@@ -105,9 +105,12 @@ Rules (enforced by `gems/gemstack/test/architecture_test.rb`):
 | `gemstack-db` | Sequel/PostgreSQL connection + pool, `GemStack::Model`, error mapping, migrations, db tasks, test support | core, schema, sequel, pg |
 | `gemstack-jobs` | `GemStack::Job`, adapters (postgres/async/inline/test/sidekiq), worker, test helpers | core (+ gemstack-db for :postgres) |
 | `gemstack-realtime` | `GemStack.broadcast`, channels, SSE endpoint (hijack + nio4r), brokers, test helpers | core, schema, http, nio4r |
+| `gemstack-mail` | `GemStack::Mailer`, ERB templates (HTML-escaped), :smtp/:log/:test delivery, `deliver_later` job, test helpers | core, mail, erubi |
+| `gemstack-storage` | `GemStack::Storage`: disk and S3 services, signed URLs, direct uploads, disk endpoint, test helpers | core, http |
+| `gemstack-auth` | Argon2id passwords, DB sessions (cookie), API/reset/verification tokens, controller helpers, CSRF origin check, `rate_limit`, `GemStack::Policy` | core, cache, http, db, mail, argon2 |
 | `gemstack-contract` | contract IR from routes/schemas/serializers → TypeScript types + clients, OpenAPI 3.1 | core, schema, http |
 | `gemstack-dev` | dev gateway, process supervisor, file watcher, background contract regeneration | core |
-| `gemstack-cli` | `gemstack` executable, generators (app, resource, model, migration, controller), `db:*`, `contract` | core, dev, thor |
+| `gemstack-cli` | `gemstack` executable, generators (app, resource, model, migration, controller, job, policy), `add realtime/auth/storage`, `db:*`, `contract` | core, dev, thor |
 | `gemstack` | `GemStack::Application`: boot, Zeitwerk autoloading, reloading, testing helpers | all of the above except db, zeitwerk, puma |
 
 ---
@@ -418,5 +421,9 @@ Built in Phase 1: request IDs validated, request body size limit, JSON parse
 depth limit, security headers, production error pages without internals,
 parameter filtering in logs (`password`, `token`, `secret`, ... configurable),
 CORS off by default (same-origin needs none) with explicit allow-listing when
-enabled. Planned: rate-limiting hook, secure cookie/session defaults, bcrypt/
-argon2 via established gems for auth, secret loading from ENV/credentials.
+enabled. Phase 6 (opt-in modules): Argon2id passwords, database sessions in
+HttpOnly/SameSite cookies (`__Host-`/Secure in production), digest-only token
+storage, cross-site request refusal via `Sec-Fetch-Site`/`Origin`,
+`rate_limit`, deny-by-default policies, signed storage URLs, and
+`SECRET_KEY_BASE` with per-purpose keys (`GemStack.key_for`) — see
+DECISIONS D-047–D-054.

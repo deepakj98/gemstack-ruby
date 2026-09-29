@@ -137,11 +137,28 @@ documented before the next begins.
   routing, `gemstack.denied`, reconnect with `last_event_id`, idle after unsubscribing.
 - SSE through Next.js production rewrites, with a broadcast from a separate console process.
 
-## Phase 6 — Optional modules
+## Phase 6 — Optional modules  *(complete)*
 
-- [ ] `gemstack add auth` (sessions and tokens, bcrypt/argon2 via gems)
-- [ ] Authorization policies
-- [ ] Mail, storage (local / S3), additional cache adapters
+- [x] `gemstack-mail`: mailers, ERB templates, :smtp / :log / :test delivery, `deliver_later` via jobs, `assert_emails`
+- [x] `gemstack add auth`: Argon2id passwords (bcrypt verification + rehash), DB sessions in HttpOnly cookies,
+      API tokens, sign up / log in / log out, password reset and email verification by email
+- [x] Cross-site request refusal (Fetch Metadata), `rate_limit`, generic login errors and timing guard
+- [x] Generated Next.js pages (/login, /signup, /forgot-password, /reset-password, /verify-email, /account) and hooks
+- [x] Policies: `GemStack::Policy`, `authorize!`, `policy_scope`, `gemstack generate policy`
+- [x] `gemstack add storage`: disk and S3 services, signed URLs, direct browser uploads, `frontend/lib/upload.ts`
+- [x] `SECRET_KEY_BASE` and `GemStack.key_for(purpose)`
+- [ ] Not yet: OAuth / social login, two-factor authentication, attachment models and image variants,
+      additional cache adapters
+
+### Phase 6 verification
+
+- 463 tests across fourteen gems, 0 skipped with PostgreSQL + Redis; RuboCop clean.
+- `script/e2e` adds auth, storage and a policy to a generated app: 78 generated tests, TypeScript and
+  `next build` pass; `add auth` is idempotent.
+- Live through `gemstack dev`: signup → session cookie → `/me`; the confirmation email delivered by the
+  jobs worker into `tmp/mail`; verification link; a cross-site POST refused; a direct upload `PUT` through
+  the gateway to disk; every auth page renders.
+- S3 presigning checked offline with stubbed responses (signed headers include content type and length).
 
 ## Phase 7 — Developer experience
 

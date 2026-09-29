@@ -88,6 +88,13 @@ and build the frontend with `NEXT_PUBLIC_GEMSTACK_API_URL=https://api.example.co
 - Several processes/hosts? Use `config.cache.store = :redis` (`gem "redis-client"`, `REDIS_URL`).
 - Realtime (SSE) works through Next.js rewrites and reverse proxies; with nginx set
   `proxy_read_timeout` above 15 s (GemStack sends `X-Accel-Buffering: no`). See docs/realtime.md.
+- `SECRET_KEY_BASE` (`openssl rand -hex 64`) — needed by storage signatures and any module using
+  `GemStack.key_for`; keep it stable across deploys.
+- With auth: `SMTP_URL`, `MAIL_FROM` and `APP_URL` (the frontend's public URL, for email links); run a
+  jobs worker (emails are sent from jobs); serve over HTTPS (the session cookie is `Secure`); call
+  `GemStack::Auth.cleanup!` daily; use the Redis cache store with several hosts so rate limits are shared.
+- With storage: `STORAGE_SERVICE=s3`, `S3_BUCKET`, `AWS_REGION` (+ credentials), `gem "aws-sdk-s3"`, and
+  a bucket CORS rule allowing `PUT` from your site (docs/storage.md).
 - Health check: `GET /api/health` → `200 {"status":"ok"}`.
 - Collect stdout: each line is a JSON object with `level`, `msg`, `id`.
 

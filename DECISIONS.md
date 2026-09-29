@@ -626,6 +626,121 @@ real TypeScript client against a live server.
 - **SSE through Next.js rewrites** was claimed in D-010 but unverified; it is
   now verified in production mode.
 
+## D-047 Mail: the `mail` gem, ERB templates, delivery through jobs
+
+**Decision.** `gemstack-mail` wraps the `mail` gem (message building, MIME,
+SMTP) rather than reimplementing any of it. Mailers are classes whose public
+methods are actions; `Mailer.action(args)` returns a `Delivery` with
+`deliver_now` / `deliver_later`. Templates are ERB (Erubi) next to the mailer
+in `app/mailers/templates/`; HTML templates escape by default. Delivery
+methods: `:smtp` (configured by one `SMTP_URL`), `:log` (development: saved
+to `tmp/mail` as `.eml` and `.html`), `:test`, or any object with
+`#deliver(message)` for API providers.
+
+**Reasoning.** `deliver_later` goes through `GemStack::Jobs`, so failed
+deliveries retry with backoff and, with the PostgreSQL queue, an email enqueued
+in a rolled-back transaction is never sent. Arguments must be JSON values
+(ids, not records) — the job rule from D-040. An action that returns without
+calling `mail` sends nothing, so a job for a since-deleted user doesn't fail
+and retry forever. `DeliveryJob` is autoloaded so a worker process can
+resolve the class name it finds in the queue.
+
+## D-048 Sessions: random tokens in HttpOnly cookies, rows in the database
+
+**Context.** The user chose "cookies + API tokens". Options for the browser
+side: signed/encrypted cookie sessions, JWTs, or server-side sessions.
+
+**Decision.** A 256-bit random token in an HttpOnly, `SameSite=Lax` cookie
+(`Secure` and `__Host-session` in production); the `sessions` table stores its
+SHA-256 digest with user, IP, user agent, `last_seen_at` and a sliding 30-day
+expiry (extended at most every 5 minutes, so reads don't write).
+
+**Reasoning.** Server-side rows can be listed and revoked — a password reset
+or "sign out everywhere" really ends sessions, which signed cookies and JWTs
+can't do without a denylist. Digest-only storage means a database leak doesn't
+yield working sessions. Because Next.js and the API share an origin (D-010),
+the cookie works with no CORS or token handling in JavaScript, where XSS could
+read it. Sign-in always issues a new token (no session fixation). The lookup is
+one indexed query per authenticated request.
+
+## D-049 Passwords: Argon2id through the `argon2` gem
+
+**Decision.** Argon2id, t=2, m=32 MiB, p=1 (≈35 ms per hash, measured),
+configurable; cheap parameters in tests. bcrypt hashes from other systems still
+verify when the app adds the `bcrypt` gem, and every hash weaker than the
+current settings is upgraded on the next successful login. Length 12–128
+characters, no composition rules; plaintext longer than 1 KB is never hashed.
+
+**Reasoning.** Argon2id is OWASP's first recommendation and memory-hard; the
+`argon2` gem binds the reference C implementation — GemStack implements no
+cryptography. Parameters above OWASP's minimum (19 MiB, t=2) while keeping login
+latency small. NIST SP 800-63B favours length over composition rules.
+
+## D-050 Account flows that don't leak account existence
+
+Login gives one answer for "unknown email" and "wrong password" and spends
+the same time on both (a dummy Argon2 verification). Forgot-password always
+answers 202. Reset and verification tokens are single use (consumed with an
+atomic `DELETE … RETURNING`), expire (1 h / 3 d), are stored as digests, and a
+new one invalidates older ones; a verification token is bound to the address it
+was sent to. A password reset ends every session. Signup does reveal that an
+address is taken — a deliberate usability trade-off, rate limited.
+
+## D-051 CSRF: refuse cross-site writes using Fetch Metadata
+
+**Decision.** No CSRF tokens. `GemStack::Auth::Controller` refuses unsafe
+requests (POST/PUT/PATCH/DELETE) whose `Sec-Fetch-Site` isn't `same-origin`
+(or `none`), falling back to comparing `Origin` with the host for older
+browsers; `config.auth.trusted_origins` allows named origins. Requests with
+neither header aren't from browsers and can't carry a victim's cookie; requests
+authenticated only by a bearer token can't be forged cross-site.
+
+**Reasoning.** Together with `SameSite=Lax` this is the defence OWASP now
+recommends for same-origin apps, and it needs nothing from the frontend — no
+token endpoint, no hidden fields, nothing to forget in a hand-written `fetch`.
+
+## D-052 Policies: plain classes, deny by default
+
+`GemStack::Policy` (in `gemstack-auth`): one class per model, predicate
+methods (`show?`…) that default to `false`, and a `Scope#resolve` that raises
+until defined. Controllers get `authorize!` (403), `policy_scope` and `policy`.
+Pundit-shaped on purpose — familiar, tiny, and replaceable by Pundit or Action
+Policy.
+
+## D-053 Storage: direct uploads with signed URLs
+
+**Decision.** Browsers upload straight to storage: the API validates type and
+size and returns a presigned `PUT` (S3: content type and exact length are in
+the signature; disk: a signed token checked by `Storage::Endpoint`). The server
+chooses keys (`uploads/YYYY/MM/<uuid>/<name>.<ext>`, extension derived from
+the validated type), and records reference files by a signed id, so clients
+can't attach other people's files. No attachment models or image processing
+yet.
+
+**Reasoning.** Keeps large bodies away from Ruby processes and
+`max_body_size` small. One browser flow works for disk (development) and S3,
+R2 or MinIO (production). SVG and HTML are refused by default and
+disk-served files carry `nosniff` and `CSP: sandbox`, because uploaded
+content is untrusted.
+
+## D-054 Secrets and findings recorded during Phase 6
+
+- **`SECRET_KEY_BASE`** (core): required in production; generated per
+  environment in `tmp/` for development and tests. `GemStack.key_for(purpose)`
+  derives independent keys (HMAC), so storage signatures and future uses never
+  share a key.
+- **Rate limits** live in `gemstack-auth` (`rate_limit to:, within:, by:`) and
+  count in `GemStack.cache`; with the default null store in tests they never
+  fire, so app tests aren't order-dependent.
+- **Missing tables:** `gemstack contract` right after `gemstack add auth` ran
+  Sequel's schema queries against tables that weren't migrated yet and logged
+  two errors per model. `GemStack::Model` now checks `to_regclass` first.
+- **`base64`** isn't a default gem in Ruby 4; the storage signer uses
+  `pack("m0")`. Only the generated app caught this — the monorepo bundle
+  pulls base64 in through another gem.
+- **Workers and lazily-required jobs:** the live dev check showed the worker
+  couldn't resolve `GemStack::Mail::DeliveryJob` (D-047's autoload).
+
 ---
 
 ## Proposed decisions (future phases)

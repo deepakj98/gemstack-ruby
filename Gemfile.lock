@@ -11,6 +11,13 @@ PATH
       gemstack-schema (= 0.1.0)
       puma (>= 6.4)
       zeitwerk (~> 2.6)
+    gemstack-auth (0.1.0)
+      argon2 (~> 2.3)
+      gemstack-cache (= 0.1.0)
+      gemstack-core (= 0.1.0)
+      gemstack-db (= 0.1.0)
+      gemstack-http (= 0.1.0)
+      gemstack-mail (= 0.1.0)
     gemstack-cache (0.1.0)
       gemstack-core (= 0.1.0)
     gemstack-cli (0.1.0)
@@ -36,6 +43,10 @@ PATH
       rack (~> 3.1)
     gemstack-jobs (0.1.0)
       gemstack-core (= 0.1.0)
+    gemstack-mail (0.1.0)
+      erubi (~> 1.13)
+      gemstack-core (= 0.1.0)
+      mail (~> 2.9)
     gemstack-realtime (0.1.0)
       gemstack-core (= 0.1.0)
       gemstack-http (= 0.1.0)
@@ -44,20 +55,71 @@ PATH
     gemstack-schema (0.1.0)
       bigdecimal (>= 3.1)
       gemstack-core (= 0.1.0)
+    gemstack-storage (0.1.0)
+      gemstack-core (= 0.1.0)
+      gemstack-http (= 0.1.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
+    argon2 (2.3.3)
+      ffi (~> 1.15)
+      ffi-compiler (~> 1.0)
     ast (2.4.3)
+    aws-eventstream (1.4.0)
+    aws-partitions (1.1290.0)
+    aws-sdk-core (3.257.0)
+      aws-eventstream (~> 1, >= 1.3.0)
+      aws-partitions (~> 1, >= 1.992.0)
+      aws-sigv4 (~> 1.9)
+      base64
+      bigdecimal
+      jmespath (~> 1, >= 1.6.1)
+      logger
+      rexml (~> 3.4, >= 3.4.2)
+    aws-sdk-kms (1.132.0)
+      aws-sdk-core (~> 3, >= 3.256.0)
+      aws-sigv4 (~> 1.5)
+    aws-sdk-s3 (1.232.3)
+      aws-sdk-core (~> 3, >= 3.256.0)
+      aws-sdk-kms (~> 1)
+      aws-sigv4 (~> 1.5)
+    aws-sigv4 (1.12.1)
+      aws-eventstream (~> 1, >= 1.0.2)
+    base64 (0.3.0)
+    bcrypt (3.1.22)
     benchmark (0.5.0)
     bigdecimal (4.0.1)
     brotli (0.8.0)
     connection_pool (3.0.2)
+    date (3.5.1)
+    erubi (1.13.1)
+    ffi (1.17.4)
+    ffi-compiler (1.4.2)
+      ffi (>= 1.15.5)
+      rake
+    jmespath (1.6.2)
     json (3.0.2)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
+    mail (2.9.1)
+      logger
+      mini_mime (>= 0.1.1)
+      net-imap
+      net-pop
+      net-smtp
+    mini_mime (1.1.5)
     minitest (5.26.1)
+    net-imap (0.6.7)
+      date
+      net-protocol
+    net-pop (0.1.2)
+      net-protocol
+    net-protocol (0.4.0)
+      timeout
+    net-smtp (0.5.1)
+      net-protocol
     nio4r (2.7.5)
     oj (3.16.10)
       bigdecimal (>= 3.0)
@@ -80,6 +142,7 @@ GEM
     redis-client (0.30.1)
       connection_pool
     regexp_parser (2.11.3)
+    rexml (3.4.4)
     rubocop (1.91.0)
       json (>= 2.3)
       language_server-protocol (~> 3.17.0.2)
@@ -104,6 +167,7 @@ GEM
       rack (>= 3.2.0)
       redis-client (>= 0.29.0)
     thor (1.5.0)
+    timeout (0.6.1)
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
     unicode-emoji (4.2.0)
@@ -113,9 +177,13 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  argon2 (~> 2.3)
+  aws-sdk-s3 (~> 1.232)
+  bcrypt (~> 3.1)
   benchmark
   brotli (~> 0.8)
   gemstack!
+  gemstack-auth!
   gemstack-cache!
   gemstack-cli!
   gemstack-contract!
@@ -124,8 +192,10 @@ DEPENDENCIES
   gemstack-dev!
   gemstack-http!
   gemstack-jobs!
+  gemstack-mail!
   gemstack-realtime!
   gemstack-schema!
+  gemstack-storage!
   minitest (~> 5.25)
   oj (~> 3.16)
   rack-test (~> 2.2)

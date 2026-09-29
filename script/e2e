@@ -79,6 +79,13 @@ export function LiveProducts() {
 }
 TSX
 
+step "add auth + storage, generate a policy"
+bin/gemstack add auth
+bin/gemstack add storage
+bin/gemstack g policy Product
+if bin/gemstack add auth > /dev/null 2>&1; then :; else echo "expected 'add auth' to be idempotent"; exit 1; fi
+test "$(ls db/migrations | grep -c create_auth_tables)" = 1
+
 step "migrate + Ruby tests"
 bin/gemstack db:migrate
 bin/gemstack test
