@@ -1,18 +1,24 @@
 # frozen_string_literal: true
 
-require_relative "../gemstack-core/lib/gemstack/version"
+# All GemStack gems share one version; change it with `rake version:set[x.y.z]`.
+version = "0.1.0"
 
 Gem::Specification.new do |spec|
   spec.name = "gemstack-cache"
-  spec.version = GemStack::VERSION
+  spec.version = version
   spec.summary = "GemStack cache: GemStack.cache.fetch with memory, null and Redis stores"
-  spec.authors = ["GemStack contributors"]
+  spec.authors = ["Shoaib Malik"]
+  spec.email = ["gemstack26@gmail.com"]
   spec.license = "MIT"
-  spec.homepage = "https://github.com/gemstack/gemstack"
+  spec.homepage = "https://github.com/gemstack-rb/gemstack"
   spec.required_ruby_version = ">= 4.0"
-  spec.files = Dir["lib/**/*.rb"]
+  spec.files = Dir["README.md", "LICENSE.txt", "CHANGELOG.md", "lib/**/*.rb"]
   spec.require_paths = ["lib"]
   spec.metadata["rubygems_mfa_required"] = "true"
+  spec.metadata["source_code_uri"] = "https://github.com/gemstack-rb/gemstack/tree/main/gems/gemstack-cache"
+  spec.metadata["changelog_uri"] = "https://github.com/gemstack-rb/gemstack/blob/main/gems/gemstack-cache/CHANGELOG.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/gemstack-rb/gemstack/issues"
+  spec.metadata["documentation_uri"] = "https://github.com/gemstack-rb/gemstack/tree/main/docs"
 
-  spec.add_dependency "gemstack-core", GemStack::VERSION
+  spec.add_dependency "gemstack-core", version
 end

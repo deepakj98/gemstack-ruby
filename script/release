@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Publishes every GemStack gem to rubygems.org, in dependency order.
+#
+#   gem signin                    # as the rubygems.org account that owns the gems (MFA on)
+#   script/release 0.1.0
+#
+# Checks first: on main, clean tree, pushed, the version everywhere, a CHANGELOG
+# entry, the test suite (SKIP_TESTS=1 to skip), and `rake gems:check`. Versions
+# already on rubygems.org are skipped, so a release interrupted halfway (an
+# expired MFA code, a network error) is finished by running it again.
+#
+# ⚠️  Published gems are PUBLIC and a version can never be re-used. See RELEASING.md.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+VERSION="${1:?usage: script/release VERSION}"
+fail() { echo "✗ $*"; exit 1; }
+
+[ "$(git branch --show-current)" = "main" ] || fail "release from main"
+[ -z "$(git status --porcelain)" ] || fail "uncommitted changes"
+if git rev-parse --abbrev-ref '@{upstream}' > /dev/null 2>&1; then
+  [ "$(git rev-list '@{upstream}..HEAD' --count)" = "0" ] || fail "push main first (git push)"
+else
+  fail "main has no upstream — push the monorepo first (see RELEASING.md)"
+fi
+current=$(ruby -e 'require "./gems/gemstack-core/lib/gemstack/version"; print GemStack::VERSION')
+[ "$current" = "$VERSION" ] || fail "the code is at $current — run: bundle exec rake version:set[$VERSION], commit, push"
+grep -q "^## $VERSION" CHANGELOG.md || fail "add a '## $VERSION' section to CHANGELOG.md"
+
+# Published gems and repositories are public and permanent (RELEASING.md).
+sensitive=$(git ls-files | grep -iE '(^|/)\.env($|\.[^e])|\.pem$|\.key$|(^|/)(secrets?|credentials?)(\.[a-z]+)?$|_secret$|\.sql$|\.csv$|\.log$' || true)
+[ -z "$sensitive" ] || fail "files that may hold secrets or data are tracked — remove them and get them reviewed before publishing: $sensitive"
+
+if [ -z "${SKIP_TESTS:-}" ]; then
+  echo "== tests (needs GEMSTACK_TEST_DATABASE_URL for the database suites)"
+  bundle exec rake
+fi
+echo "== build and check"
+bundle exec rake gems:check
+
+echo "== push to rubygems.org (you'll be asked for your MFA code)"
+for gem in $(script/gems); do
+  if curl -fsS -o /dev/null "https://rubygems.org/api/v2/rubygems/$gem/versions/$VERSION.json" 2>/dev/null; then
+    echo "   $gem $VERSION is already published — skipped"
+    continue
+  fi
+  gem push "pkg/$gem-$VERSION.gem"
+done
+
+git tag -a "v$VERSION" -m "GemStack $VERSION" 2>/dev/null || echo "tag v$VERSION exists"
+echo
+echo "Published GemStack $VERSION. Next:"
+echo "  git push origin v$VERSION     # the release tag"
+echo "  script/split                  # update the per-gem mirrors"

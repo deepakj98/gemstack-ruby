@@ -108,28 +108,24 @@ const created: Product = await products.create({ name: "Lamp", price: "9.99" });
 Requirements: **Ruby ≥ 4.0** (developed on 4.0.7), Node.js ≥ 20, npm, and
 PostgreSQL (unless `--skip-database`).
 
-GemStack installs like any other framework gem. Until it is published to
-RubyGems.org, build and install it from this repository:
-
 ```bash
-git clone … gemstack && cd gemstack
-bundle install
-bundle exec rake gems:install      # builds pkg/*.gem and runs `gem install` for all eight gems
-gemstack version                   # the `gemstack` command is now on your PATH
+gem install gemstack
+gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.1.0"
 ```
 
-Then use it like `rails`:
+The `gemstack` gem is the framework: it brings every module an app needs
+(`gemstack-core`, `-cache`, `-schema`, `-http`, `-contract`, `-dev`, `-cli`).
+Optional modules are separate gems added per app — `gemstack-db` and
+`gemstack-jobs` by `gemstack new`, `gemstack-realtime`, `-auth`, `-mail` and
+`-storage` by `gemstack add …`. All of them are released together with one
+version.
 
-```bash
-gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.1.0" (resolved from installed gems)
-```
-
-`bundle exec rake gems:uninstall` removes them again. Once published, all of
-this becomes `gem install gemstack`.
-
-**Hacking on GemStack itself?** `bin/gemstack` runs the CLI straight from the
-checkout, and apps it creates point their Gemfile at the checkout
-(`path "…/gems"`), so framework changes apply immediately.
+**Hacking on GemStack itself?** Clone this repository (every gem lives in
+`gems/`; the per-gem repositories are read-only mirrors). `bin/gemstack` runs
+the CLI straight from the checkout, and apps it creates point their Gemfile at
+the checkout (`path "…/gems"`), so framework changes apply immediately.
+`bundle exec rake gems:install` installs the checkout's gems as if released.
+Releases: [RELEASING.md](RELEASING.md).
 
 See [`examples/shop`](examples/shop) for a complete example application.
 
@@ -153,7 +149,7 @@ gems/
   gemstack/        umbrella: Application, autoloading, reloading, test helpers
 docs/              guides
 benchmarks/        performance measurements
-ARCHITECTURE.md    design · ROADMAP.md plan · DECISIONS.md decision log
+ARCHITECTURE.md    design · ROADMAP.md plan · DECISIONS.md decision log · RELEASING.md releases
 ```
 
 ## Developing GemStack

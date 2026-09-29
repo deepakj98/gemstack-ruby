@@ -21,6 +21,27 @@ class ArchitectureTest < Minitest::Test
     specs.fetch(name).runtime_dependencies.map(&:name).grep(/\Agemstack/)
   end
 
+  def test_one_version_and_publishable_metadata
+    ORDER.each do |name|
+      spec = specs.fetch(name)
+
+      assert_equal GemStack::VERSION, spec.version.to_s, "#{name}: rake version:set keeps every gem on one version"
+      assert_equal ["Shoaib Malik"], spec.authors
+      assert_equal "MIT", spec.license
+      assert_equal "true", spec.metadata["rubygems_mfa_required"]
+      %w[source_code_uri changelog_uri bug_tracker_uri documentation_uri].each do |key|
+        assert spec.metadata[key]&.start_with?("https://github.com/gemstack-rb/gemstack"), "#{name}: #{key}"
+      end
+      %w[README.md LICENSE.txt CHANGELOG.md].each do |file|
+        assert File.file?(File.join(GEMS_DIR, name, file)), "#{name} is missing #{file}"
+      end
+      gemstack_deps(name).each do |dep|
+        requirement = spec.runtime_dependencies.find { |d| d.name == dep }.requirement.to_s
+        assert_equal "= #{GemStack::VERSION}", requirement, "#{name} pins #{dep} to the same version"
+      end
+    end
+  end
+
   def test_core_has_no_runtime_dependencies
     assert_empty specs.fetch("gemstack-core").runtime_dependencies
   end
