@@ -42,8 +42,8 @@ git push -u origin main
 
 ### rubygems.org
 
-1. Create the account (the gems list `Shoaib Malik <gemstack26@gmail.com>` as
-   author) and turn on multi-factor authentication for **UI and API** — the
+1. Create the account (the gems list Adware Technologies and Shoaib Malik as
+   authors, `gemstack26@gmail.com` as the contact) and turn on multi-factor authentication for **UI and API** — the
    gemspecs require MFA for every push.
 2. Sign in on the machine you release from:
 

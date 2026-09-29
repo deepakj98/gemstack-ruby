@@ -1,0 +1,315 @@
+/* The GemStack welcome page (app/page.tsx). Delete both files when you replace it. */
+
+.shell {
+  --ruby: #e11d48;
+  --violet: #7c3aed;
+  --ink: #16181d;
+  --muted: #5b6170;
+  --surface: rgba(255, 255, 255, 0.72);
+  --border: rgba(22, 24, 29, 0.09);
+  --code: #f3f4f7;
+  --ok: #16a34a;
+  --pending: #d99a1e;
+  --error: #dc2626;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+  background:
+    radial-gradient(60rem 30rem at 10% -10%, rgba(225, 29, 72, 0.12), transparent 60%),
+    radial-gradient(50rem 30rem at 100% 0%, rgba(124, 58, 237, 0.12), transparent 60%),
+    #fbfbfd;
+}
+
+@media (prefers-color-scheme: dark) {
+  .shell {
+    --ink: #eceef4;
+    --muted: #9aa0ad;
+    --surface: rgba(24, 27, 36, 0.72);
+    --border: rgba(255, 255, 255, 0.08);
+    --code: rgba(255, 255, 255, 0.06);
+    --ok: #4ade80;
+    --pending: #fbbf24;
+    --error: #f87171;
+
+    background:
+      radial-gradient(60rem 30rem at 10% -10%, rgba(225, 29, 72, 0.22), transparent 60%),
+      radial-gradient(50rem 30rem at 100% 0%, rgba(124, 58, 237, 0.22), transparent 60%),
+      #0c0d12;
+  }
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: clamp(3rem, 8vw, 6rem) 1.25rem 3rem;
+}
+
+/* Hero */
+
+.hero {
+  text-align: center;
+  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+
+.logo {
+  width: 5rem;
+  height: 5rem;
+  filter: drop-shadow(0 12px 24px rgba(225, 29, 72, 0.35));
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo {
+    animation: none;
+  }
+}
+
+.eyebrow {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2.2rem, 6vw, 3.6rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+
+.accent {
+  background: linear-gradient(120deg, #ff5f8f, var(--ruby) 45%, var(--violet));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lead {
+  max-width: 38rem;
+  margin: 1.1rem auto 0;
+  font-size: clamp(1.02rem, 2.2vw, 1.2rem);
+  color: var(--muted);
+}
+
+.lead strong {
+  color: var(--ink);
+}
+
+/* Live checks */
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 2rem;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.check code {
+  font-size: 0.85em;
+}
+
+.dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ok .dot {
+  background: var(--ok);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent);
+}
+
+.pending .dot {
+  background: var(--pending);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.error .dot {
+  background: var(--error);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Cards */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ruby) 35%, var(--border));
+  box-shadow: 0 16px 40px -24px rgba(225, 29, 72, 0.45);
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ruby), var(--violet));
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.cardTitle {
+  margin: 0.3rem 0 0;
+  font-size: 1.08rem;
+}
+
+.cardText {
+  flex: 1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+
+.command {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.6rem 0.55rem 0.8rem;
+  border-radius: 10px;
+  background: var(--code);
+  font-size: 0.82rem;
+}
+
+.command code {
+  flex: 1;
+  min-width: 0;
+  padding: 0.15rem 0 0;
+  background: none;
+  line-height: 1.5;
+  overflow-wrap: anywhere; /* long commands wrap instead of being cut off */
+}
+
+.prompt {
+  color: var(--ruby);
+  user-select: none;
+}
+
+.copy {
+  flex: none;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.copy:hover,
+.copy:focus-visible {
+  border-color: var(--ruby);
+  color: var(--ruby);
+}
+
+.link {
+  align-self: flex-start;
+  color: var(--ruby);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover,
+.link:focus-visible {
+  text-decoration: underline;
+}
+
+.edit {
+  margin: 2.5rem 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* Footer */
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  width: 100%;
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.footer a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer a:hover,
+.footer a:focus-visible {
+  color: var(--ruby);
+}
+
+@media (max-width: 40rem) {
+  .footer {
+    justify-content: center;
+    text-align: center;
+  }
+}

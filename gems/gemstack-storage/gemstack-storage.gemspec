@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 # All GemStack gems share one version; change it with `rake version:set[x.y.z]`.
-version = "0.2.1"
+version = "0.2.2"
 
 Gem::Specification.new do |spec|
   spec.name = "gemstack-storage"
   spec.version = version
   spec.summary = "GemStack storage: disk and S3 services, signed URLs, direct uploads"
-  spec.authors = ["Shoaib Malik"]
+  spec.authors = ["Adware Technologies", "Shoaib Malik"]
   spec.email = ["gemstack26@gmail.com"]
   spec.license = "MIT"
   spec.homepage = "https://github.com/gemstack-rb/gemstack"

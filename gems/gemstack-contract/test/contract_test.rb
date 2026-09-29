@@ -233,4 +233,11 @@ class ContractTest < Minitest::Test
       assert JSON.parse(File.read(File.join(root, "openapi.json")))["paths"]
     end
   end
+
+  def test_an_app_without_routes_still_compiles
+    empty = { api_path: "/api", types: {}, resources: [], warnings: [] }
+    files = GemStack::Contract::TypeScript.new(empty).files
+
+    assert_includes files["types.ts"], "export {};"
+  end
 end

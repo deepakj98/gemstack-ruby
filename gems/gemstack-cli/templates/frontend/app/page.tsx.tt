@@ -1,45 +1,183 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { api, API_PATH } from "@/lib/gemstack/client";
+import styles from "./page.module.css";
 
-// Starter page: confirms the browser reaches the Ruby API through the same origin.
-// Replace it with your application.
-export default function Home() {
+// The GemStack welcome page: shows that Next.js renders and that the browser
+// reaches the Ruby API through the same origin. Replace it with your app —
+// this file and app/page.module.css are yours to delete.
+
+const DOCS = "https://github.com/gemstack-rb/gemstack/tree/main/docs";
+
+export default function Welcome() {
   const health = useQuery({
-    queryKey: ["health"],
-    queryFn: () => api.get<{ status: string }>("/health"),
+    queryKey: ["gemstack", "health"],
+    queryFn: async () => {
+      const started = performance.now();
+      const body = await api.get<{ status: string }>("/health");
+      return { ...body, ms: Math.round(performance.now() - started) };
+    },
+    retry: 1,
   });
-
-  const state = health.isPending ? "pending" : health.isError ? "error" : "ok";
-  const label = {
-    pending: "Connecting to the Ruby API…",
-    error: `Ruby API unreachable: ${health.error?.message}`,
-    ok: `Ruby API connected — GET ${API_PATH}/health → ${health.data?.status}`,
-  }[state];
+  const apiState = health.isPending ? "pending" : health.isError ? "error" : "ok";
 
   return (
-    <main className="page">
-      <h1><%= module_name %></h1>
-      <p className="muted">Next.js + TypeScript frontend, GemStack Ruby API, one origin.</p>
+    <div className={styles.shell}>
+      <main className={styles.main}>
+        <header className={styles.hero}>
+          <GemLogo className={styles.logo} />
+          <p className={styles.eyebrow}>GemStack</p>
+          <h1 className={styles.title}>
+            Yay! You&apos;re on <span className={styles.accent}>GemStack</span>.
+          </h1>
+          <p className={styles.lead}>
+            <strong><%= module_name %></strong> is running: a Next.js frontend and a Ruby API, served from one origin.
+          </p>
 
-      <p className={`status status-${state}`} role="status">
-        <span className="dot" aria-hidden="true" />
-        {label}
-      </p>
+          <div className={styles.checks} role="status" aria-live="polite">
+            <span className={`${styles.check} ${styles.ok}`}>
+              <span className={styles.dot} aria-hidden="true" /> Next.js rendering
+            </span>
+            <span className={`${styles.check} ${styles[apiState]}`}>
+              <span className={styles.dot} aria-hidden="true" />
+              {apiState === "pending" && "Connecting to the Ruby API…"}
+              {apiState === "ok" && (
+                <>
+                  Ruby API connected · <code>GET {API_PATH}/health</code> in {health.data?.ms} ms
+                </>
+              )}
+              {apiState === "error" && <>Ruby API unreachable: {health.error?.message}</>}
+            </span>
+          </div>
+        </header>
 
-      <h2>Next steps</h2>
-      <ul>
-        <li>
-          Add an endpoint: <code>gemstack generate controller Status show</code>
-        </li>
-        <li>
-          Call it from here: <code>api.get(&quot;/status/1&quot;)</code> (see <code>lib/gemstack/client.ts</code>)
-        </li>
-        <li>
-          Edit this page: <code>frontend/app/page.tsx</code>
-        </li>
-      </ul>
-    </main>
+        <section className={styles.grid} aria-label="Next steps">
+          <Card
+            step="1"
+            title="Generate a resource"
+            text="Migration, model, API, typed TypeScript client and Next.js pages — in one command."
+            command="gemstack g resource Product name:string"
+          />
+          <Card
+            step="2"
+            title="Explore your API"
+            text="Every endpoint with its types, and a form to try requests from the browser."
+            href={`${API_PATH}/docs`}
+            linkLabel={`Open ${API_PATH}/docs`}
+          />
+          <Card
+            step="3"
+            title="Check your setup"
+            text="Ruby, Node.js, the database, migrations and the TypeScript contract — with the fix for anything off."
+            command="gemstack doctor"
+          />
+          <Card
+            step="4"
+            title="Read the guides"
+            text="Models, controllers, jobs, realtime, authentication, storage and deployment."
+            href={DOCS}
+            linkLabel="Open the guides"
+            external
+          />
+        </section>
+
+        <p className={styles.edit}>
+          Edit <code>frontend/app/page.tsx</code> to replace this page · API code lives in <code>app/</code>
+        </p>
+      </main>
+
+      <footer className={styles.footer}>
+        <span>
+          GemStack <%= version %> · Ruby <%= ruby_version %> · Next.js
+        </span>
+        <span>
+          Open source by{" "}
+          <a href="https://www.adwaretech.com" target="_blank" rel="noreferrer">
+            Adware Technologies
+          </a>
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+function Card(props: {
+  step: string;
+  title: string;
+  text: string;
+  command?: string;
+  href?: string;
+  linkLabel?: string;
+  external?: boolean;
+}) {
+  return (
+    <article className={styles.card}>
+      <span className={styles.step} aria-hidden="true">
+        {props.step}
+      </span>
+      <h2 className={styles.cardTitle}>{props.title}</h2>
+      <p className={styles.cardText}>{props.text}</p>
+      {props.command && <Command text={props.command} />}
+      {props.href && (
+        <a
+          className={styles.link}
+          href={props.href}
+          {...(props.external ? { target: "_blank", rel: "noreferrer" } : {})}
+        >
+          {props.linkLabel} <span aria-hidden="true">→</span>
+        </a>
+      )}
+    </article>
+  );
+}
+
+function Command({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard unavailable (e.g. not a secure context): the command stays selectable.
+    }
+  }
+  return (
+    <div className={styles.command}>
+      <code>
+        <span className={styles.prompt} aria-hidden="true">
+          $
+        </span>{" "}
+        {text}
+      </code>
+      <button type="button" className={styles.copy} onClick={copy} aria-label={`Copy: ${text}`}>
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </div>
+  );
+}
+
+function GemLogo({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 64 64" role="img" aria-label="GemStack">
+      <defs>
+        <linearGradient id="gemstack-gem" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ff5f8f" />
+          <stop offset="0.55" stopColor="#e11d48" />
+          <stop offset="1" stopColor="#7c3aed" />
+        </linearGradient>
+      </defs>
+      <path d="M18 8h28l12 15-26 34L6 23z" fill="url(#gemstack-gem)" />
+      <path
+        d="M6 23h52M18 8l7 15 7-15 7 15 7-15M25 23l7 34 7-34"
+        fill="none"
+        stroke="rgba(255,255,255,0.55)"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M18 8h28l-7 15H25z" fill="rgba(255,255,255,0.18)" />
+    </svg>
   );
 }

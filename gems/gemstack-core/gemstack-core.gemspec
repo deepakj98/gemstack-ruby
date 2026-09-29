@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.version = GemStack::VERSION
   spec.summary = "GemStack core: configuration, environment, logging, errors and plugins"
   spec.description = "The dependency-free foundation every GemStack module builds on."
-  spec.authors = ["Shoaib Malik"]
+  spec.authors = ["Adware Technologies", "Shoaib Malik"]
   spec.email = ["gemstack26@gmail.com"]
   spec.license = "MIT"
   spec.homepage = "https://github.com/gemstack-rb/gemstack"

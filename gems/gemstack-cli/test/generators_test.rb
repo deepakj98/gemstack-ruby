@@ -31,7 +31,8 @@ class AppGeneratorTest < Minitest::Test
       app/models/application_model.rb app/serializers/application_serializer.rb bin/gemstack config.ru
       config/app.rb config/database.yml config/environments/development.rb config/environments/production.rb
       config/environments/test.rb config/puma.rb config/routes.rb db/migrations/.keep db/seeds.rb
-      frontend/app/globals.css frontend/app/layout.tsx frontend/app/page.tsx frontend/app/providers.tsx
+      frontend/app/globals.css frontend/app/layout.tsx frontend/app/page.module.css frontend/app/page.tsx
+      frontend/app/providers.tsx
       frontend/lib/gemstack/client.ts frontend/next-env.d.ts frontend/next.config.ts frontend/package.json
       frontend/tsconfig.json test/health_test.rb test/test_helper.rb
     ]

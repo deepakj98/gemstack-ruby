@@ -1,6 +1,6 @@
 # GemStack
 
-**A fast, modular Ruby API framework for Next.js applications.**
+**A fast, modular Ruby API framework for Next.js applications** — by [Adware Technologies](https://www.adwaretech.com).
 
 GemStack lets you start a Ruby + Next.js + TypeScript application and go straight
 to business logic. One command gives you a Ruby API and a Next.js frontend served
@@ -89,19 +89,23 @@ const created: Product = await products.create({ name: "Lamp", price: "9.99" });
 
 | Command | |
 |---|---|
-| `gemstack new NAME` | new app (`--skip-frontend`, `--skip-install`, `--skip-git`) |
-| `gemstack dev` | Next.js + Ruby API + gateway on one port |
+| `gemstack new NAME` | new app (`--database=sqlite3\|postgresql\|mysql2\|trilogy`, `--skip-frontend`, `--skip-database`, `--skip-install`, `--skip-git`) |
+| `gemstack dev` | Next.js + Ruby API + jobs worker on one port |
 | `gemstack server` / `s` | the Ruby API alone (Puma) |
-| `gemstack routes` | list routes (`-g TEXT` to filter) |
-| `gemstack generate resource NAME fields…` / `g` | full vertical slice (`--api-only`, `--frontend-only`, `--actions=`) |
-| `gemstack generate model\|migration\|controller …` | smaller generators |
-| `gemstack db:create\|migrate\|rollback\|status\|seed\|setup\|reset\|drop` | database |
-| `gemstack contract` | regenerate TypeScript types, API client, OpenAPI |
-| `gemstack generate job NAME` / `gemstack jobs` | background job / run a worker (`jobs:status`, `jobs:retry`) |
-| `gemstack add realtime` | optional realtime module (broadcasts → browsers) |
-| `gemstack test` / `t` | run Ruby tests |
-| `gemstack console` / `c` | IRB with the app loaded |
-| `gemstack version` | |
+| `gemstack g resource Product name:string price:decimal` | full vertical slice: migration, model, API, TypeScript client, Next.js pages (`--api-only`, `--frontend-only`, `--actions=`) |
+| `gemstack g controller Reports index show` | a controller on its own, with routes and tests |
+| `gemstack g model Product name:string` | a model on its own: migration, model, serializer, test |
+| `gemstack g migration AddStockToProducts stock:integer` | a migration |
+| `gemstack g job SendDigest [QUEUE]` | a background job (`gemstack jobs` runs a worker) |
+| `gemstack g policy Order` / `gemstack g deploy` | an authorization policy / Docker, compose, Caddy, Procfile |
+| `gemstack db:create` · `db:migrate` · `db:rollback` · `db:status` · `db:seed` · `db:setup` · `db:reset` · `db:drop` | the database (`gemstack new` already runs `db:create`) |
+| `gemstack add auth\|storage\|realtime` | optional modules |
+| `gemstack doctor` | check the setup and how to fix it (`--production` before deploying) |
+| `gemstack contract` | regenerate TypeScript types, API clients, OpenAPI |
+| `gemstack routes` · `gemstack test` / `t` · `gemstack console` / `c` · `gemstack version` | |
+
+Every option, the field types and how to add other Next.js pages:
+[command reference](docs/cli.md).
 
 ## Installation
 
@@ -111,7 +115,7 @@ server database ([databases](docs/database.md)).
 
 ```bash
 gem install gemstack
-gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.1"
+gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.2"
 ```
 
 The `gemstack` gem is the framework: it brings every module an app needs
@@ -178,12 +182,19 @@ bundle exec rake bench
 [Deployment](docs/deployment.md) ·
 [Resource generation](docs/resource-generation.md)
 
-[Databases](docs/database.md) · [Models](docs/models.md) · [Validation](docs/validation.md) ·
+[Commands](docs/cli.md) · [Databases](docs/database.md) · [Models](docs/models.md) · [Validation](docs/validation.md) ·
 [Serialization](docs/serialization.md) · [Caching](docs/caching.md) ·
 [Background jobs](docs/background-jobs.md) · [Realtime](docs/realtime.md) ·
 [Authentication](docs/authentication.md) · [Authorization](docs/authorization.md) ·
 [Mail](docs/mail.md) · [Storage](docs/storage.md) · [Development tools](docs/development.md)
 
+## About
+
+GemStack is developed and maintained by **[Adware Technologies](https://www.adwaretech.com)**.
+
 ## License
 
-MIT
+GemStack is open source, available under the [MIT License](LICENSE.txt) —
+© 2026 [Adware Technologies](https://www.adwaretech.com). You may use it,
+modify it and build commercial products with it; keep the copyright and
+license notice.

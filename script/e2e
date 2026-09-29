@@ -33,6 +33,9 @@ fi
 bin/gemstack db:drop > /dev/null 2>&1 || true
 bin/gemstack db:create
 
+step "a brand-new app typechecks (empty contract)"
+(cd frontend && npx tsc --noEmit)
+
 step "generate resources covering the edge cases"
 bin/gemstack g resource Category name:string:unique
 bin/gemstack g resource Product name:string price:decimal description:text:optional sku:string:unique \
