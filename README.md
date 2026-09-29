@@ -23,15 +23,16 @@ gemstack dev          # → http://localhost:3000
          Next.js           /api/*  → Ruby (Rack + Puma)
 ```
 
-> **Status: Phases 1–5 complete — see [ROADMAP.md](ROADMAP.md).**
+> **Status: Phases 1–6 complete — see [ROADMAP.md](ROADMAP.md).**
 > Built: HTTP layer, router, middleware, controllers, single-origin dev server,
 > Next.js + TypeScript template, PostgreSQL models (Sequel), migrations,
 > validation, serializers, TypeScript/OpenAPI contract, `generate resource`.
 > Phase 3: compression, ETags/304, pagination, `GemStack.cache`, YJIT by default, benchmarks.
 > Phase 4: background jobs on PostgreSQL (transactional, SKIP LOCKED, NOTIFY), Sidekiq adapter.
 > Phase 5: realtime — `GemStack.broadcast` → Server-Sent Events, PostgreSQL fan-out, `useRealtime`.
-> Next: authentication, authorization, mail, storage (Phase 6).
-> Docs for planned modules are marked as such.
+> Phase 6: `gemstack add auth` (Argon2id, cookie sessions + API tokens, reset/verification emails,
+> Next.js pages), policies, mail, `gemstack add storage` (direct uploads to disk/S3).
+> Next: developer experience (Phase 7).
 
 ## Why
 
@@ -143,6 +144,9 @@ gems/
   gemstack-db/       PostgreSQL via Sequel: models, migrations, db tasks (optional)
   gemstack-jobs/     background jobs: PostgreSQL queue, adapters, worker
   gemstack-realtime/ GemStack.broadcast → Server-Sent Events (optional: gemstack add realtime)
+  gemstack-mail/     mailers, ERB templates, SMTP/log/test delivery, deliver_later
+  gemstack-storage/  disk and S3 storage, signed URLs, direct uploads (optional: gemstack add storage)
+  gemstack-auth/     Argon2id passwords, sessions, API tokens, policies (optional: gemstack add auth)
   gemstack-contract/ TypeScript types, API clients, OpenAPI from the backend
   gemstack-dev/    dev gateway, process supervisor, file watcher
   gemstack-cli/    `gemstack` command, generators, templates
@@ -179,11 +183,9 @@ bundle exec rake bench
 
 [Models & database](docs/models.md) · [Validation](docs/validation.md) ·
 [Serialization](docs/serialization.md) · [Caching](docs/caching.md) ·
-[Background jobs](docs/background-jobs.md) · [Realtime](docs/realtime.md)
-
-Planned modules:
-[authentication](docs/authentication.md) · [authorization](docs/authorization.md) ·
-[storage](docs/storage.md)
+[Background jobs](docs/background-jobs.md) · [Realtime](docs/realtime.md) ·
+[Authentication](docs/authentication.md) · [Authorization](docs/authorization.md) ·
+[Mail](docs/mail.md) · [Storage](docs/storage.md)
 
 ## License
 

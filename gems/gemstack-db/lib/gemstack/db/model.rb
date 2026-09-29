@@ -99,6 +99,24 @@ module GemStack
 
       private
 
+      # For a table that doesn't exist yet, skip Sequel's schema queries: they
+      # would fail and log two errors per model (e.g. while `gemstack contract`
+      # runs before `db:migrate`). One cheap catalog lookup decides.
+      def get_db_schema(reload = reload_db_schema?)
+        return super unless missing_table?
+
+        set_columns(nil)
+        {}
+      end
+
+      def missing_table?
+        return false unless @dataset && db.database_type == :postgres
+
+        db.get(Sequel.function(:to_regclass, db.literal(dataset.first_source_table))).nil?
+      rescue Sequel::Error
+        false
+      end
+
       def valid_primary_key?(id)
         return true unless integer_primary_key?
 

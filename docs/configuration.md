@@ -97,6 +97,20 @@ See [realtime](realtime.md#configuration): `config.realtime.broker`, `path`,
 `heartbeat`, `replay_size`, `replay_ttl`, `max_channels`, `max_buffer`,
 `retry_ms`, `redis_url`, `redis_channel`.
 
+### Auth, mail, storage (Phase 6 modules)
+
+- `config.auth` — see [authentication](authentication.md#configuration): `session_ttl`,
+  `session_touch_interval`, `cookie_secure`, `cookie_name`, `cookie_same_site`, `password_reset_ttl`,
+  `email_verification_ttl`, `api_token_ttl`, `password_min_length`, `password_max_length`,
+  `argon2_t_cost`, `argon2_m_cost`, `trusted_origins`, `app_url` (`APP_URL`), `user_class`.
+- `config.mail` — see [mail](mail.md): `delivery`, `smtp_url` (`SMTP_URL`), `default_from`
+  (`MAIL_FROM`), `templates_path`, `preview_dir`, `queue`.
+- `config.storage` — see [storage](storage.md#configuration): `service` (`STORAGE_SERVICE`), `root`,
+  `path`, `bucket` (`S3_BUCKET`), `region` (`AWS_REGION`), `endpoint` (`S3_ENDPOINT`), `s3_options`,
+  `url_expires_in`, `max_upload_size`, `allowed_content_types`.
+- `config.secret_key_base` — `SECRET_KEY_BASE`; required in production (`openssl rand -hex 64`),
+  generated into `tmp/` in development and tests. Modules derive their keys with `GemStack.key_for(purpose)`.
+
 ### Runtime
 
 | Setting | Default |

@@ -14,6 +14,7 @@ module GemStack
     require_relative "cli/resource_generator"
     require_relative "cli/migration_generator"
     require_relative "cli/job_generator"
+    require_relative "cli/policy_generator"
     require_relative "cli/add_generator"
     require_relative "cli/commands/db"
     require_relative "cli/commands/jobs"
@@ -33,7 +34,7 @@ module GemStack
       def basename = "gemstack"
     end
 
-    GENERATORS = "resource, model, migration, controller, job"
+    GENERATORS = "resource, model, migration, controller, job, policy"
 
     map %w[-v --version] => :version
     map "s" => :server
@@ -116,7 +117,7 @@ module GemStack
     end
 
     desc "generate GENERATOR NAME [ARGS]",
-         "Generate code (alias: g). Generators: resource, model, migration, controller"
+         "Generate code (alias: g). Generators: resource, model, migration, controller, job, policy"
     long_desc <<~DESC
       gemstack generate resource Product name:string price:decimal description:text:optional active:boolean
         Full vertical slice: migration, model, serializer, controller, routes, tests,
@@ -135,6 +136,9 @@ module GemStack
 
       gemstack generate job SendWelcomeEmail [QUEUE]
         app/jobs/send_welcome_email.rb + test (+ the gemstack_jobs migration the first time)
+
+      gemstack generate policy Order
+        app/policies/order_policy.rb + test (needs gemstack add auth)
 
       Field syntax: name:type[:optional][:unique][:index]. Types: #{ResourceSpec::TYPES.join(", ")}.
       Fields are required unless marked :optional.
@@ -162,25 +166,44 @@ module GemStack
       when "migration"
         abort("Usage: gemstack generate migration NAME [field:type ...]") unless name
         MigrationGenerator.new(name, args, root: root).run
-      when "job"
-        abort("Usage: gemstack generate job NAME [QUEUE]") unless name
-        JobGenerator.new(name, queue: args.first, root: root, force: options[:force]).run
-        say("\nNext: gemstack db:migrate (first job only) · #{Inflector.camelize(name)}.perform_later(...)")
+      when "job" then generate_job(root, name, args)
+      when "policy" then generate_policy(root, name)
       when nil then abort("Usage: gemstack generate GENERATOR NAME. Generators: #{GENERATORS}")
       else abort("Unknown generator #{generator.inspect}. Available: #{GENERATORS}")
       end
     end
 
-    desc "add FEATURE", "Add an optional module to this app: realtime"
+    desc "add FEATURE", "Add an optional module to this app: realtime, auth, storage"
     long_desc <<~DESC
       gemstack add realtime
         Adds gemstack-realtime, config/channels.rb, frontend/lib/gemstack/realtime.ts and test helpers.
+
+      gemstack add auth
+        Sign up, log in/out, password reset and email verification, API tokens and policies:
+        migrations (users, sessions, auth_tokens), User model, controllers, routes, AuthMailer,
+        tests and Next.js pages (/login, /signup, /forgot-password, /reset-password, /verify-email, /account).
+
+      gemstack add storage
+        File uploads straight from the browser to disk (development) or S3: config, uploads
+        controller, routes and frontend/lib/upload.ts.
     DESC
     method_option :skip_install, type: :boolean, default: false
+    method_option :skip_contract, type: :boolean, default: false, desc: "don't regenerate the TypeScript contract"
     def add(feature)
-      AddGenerator.new(feature, root: Project.root!, install: !options[:skip_install]).run
-      say("\nNext: declare channels in config/channels.rb, then GemStack.broadcast(...) — see docs/realtime.md")
+      root = Project.root!
+      AddGenerator.new(feature, root: root, install: !options[:skip_install]).run
+      refresh_contract(root) if %w[auth
+                                   storage].include?(feature) && !options[:skip_install] && !options[:skip_contract]
+      say("\n#{ADD_NEXT_STEPS.fetch(feature)}")
     end
+
+    ADD_NEXT_STEPS = {
+      "realtime" => "Next: declare channels in config/channels.rb, then GemStack.broadcast(...) — see docs/realtime.md",
+      "auth" => "Next: gemstack db:migrate · open http://localhost:3000/signup · " \
+                "`before :require_login` in controllers — see docs/authentication.md",
+      "storage" => "Next: uploadFile(file) from frontend/lib/upload.ts · production: STORAGE_SERVICE=s3, S3_BUCKET " \
+                   "— see docs/storage.md"
+    }.freeze
 
     desc "version", "Print the GemStack version"
     def version
@@ -188,6 +211,18 @@ module GemStack
     end
 
     no_commands do
+      def generate_job(root, name, args)
+        abort("Usage: gemstack generate job NAME [QUEUE]") unless name
+        JobGenerator.new(name, queue: args.first, root: root, force: options[:force]).run
+        say("\nNext: gemstack db:migrate (first job only) · #{Inflector.camelize(name)}.perform_later(...)")
+      end
+
+      def generate_policy(root, name)
+        abort("Usage: gemstack generate policy MODEL") unless name
+        PolicyGenerator.new(name, root: root, force: options[:force]).run
+        say("\nNext: authorize!(record) and policy_scope(#{Inflector.camelize(name)}) in controllers")
+      end
+
       def generate_resource(root, name, args)
         abort("Usage: gemstack generate resource NAME field:type ...") unless name
         abort("--api-only and --frontend-only can't be combined") if options[:api_only] && options[:frontend_only]

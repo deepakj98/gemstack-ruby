@@ -9,7 +9,7 @@ class ArchitectureTest < Minitest::Test
   GEMS_DIR = File.expand_path("../..", __dir__)
   # Dependencies may only point to gems earlier in this list.
   ORDER = %w[gemstack-core gemstack-cache gemstack-schema gemstack-http gemstack-db gemstack-jobs gemstack-realtime
-             gemstack-contract gemstack-dev gemstack-cli gemstack].freeze
+             gemstack-mail gemstack-storage gemstack-auth gemstack-contract gemstack-dev gemstack-cli gemstack].freeze
 
   def specs
     @specs ||= ORDER.to_h do |name|

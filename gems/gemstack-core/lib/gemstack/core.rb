@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "openssl"
+require "securerandom"
+require "fileutils"
 require_relative "version"
 require_relative "settings"
 require_relative "environment"
@@ -21,6 +24,12 @@ module GemStack
     setting :env_files, default: lambda {
       env = GemStack.env
       env.local? ? [".env.#{env}.local", ".env.local", ".env.#{env}", ".env"] : []
+    }
+
+    # Root secret for signatures (storage URLs, derived keys). Production must
+    # set SECRET_KEY_BASE; development/test generate one in tmp/ (git-ignored).
+    setting :secret_key_base, default: lambda {
+      ENV.fetch("SECRET_KEY_BASE", nil) || (GemStack.env.local? ? GemStack.send(:local_secret) : nil)
     }
 
     # Keys (substring, case-insensitive) masked in logs and error output.
@@ -87,12 +96,34 @@ module GemStack
 
     attr_writer :logger
 
+    # A 32-byte key for one purpose, derived from secret_key_base, so a key
+    # leaked for one use (e.g. storage URLs) can't sign anything else.
+    def key_for(purpose)
+      secret = config.secret_key_base
+      if secret.to_s.empty?
+        raise ConfigurationError,
+              "SECRET_KEY_BASE is not set (generate one with: openssl rand -hex 64)"
+      end
+
+      OpenSSL::HMAC.digest("SHA256", secret, "gemstack:#{purpose}")
+    end
+
     # Forget all process-level state. Intended for tests.
     def reset!
       @config = nil
       @env = nil
       @logger = nil
       @loaded_env_files = nil
+    end
+
+    private
+
+    def local_secret
+      path = File.join(config.root, "tmp", "#{env}_secret")
+      return File.read(path).strip if File.file?(path)
+
+      FileUtils.mkdir_p(File.dirname(path))
+      SecureRandom.hex(64).tap { |secret| File.write(path, secret, perm: 0o600) }
     end
   end
 end

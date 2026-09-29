@@ -1,0 +1,33 @@
+# frozen_string_literal: true
+
+# POST /api/uploads — step 1 of a direct upload (frontend/lib/upload.ts):
+# validates the file's type and size and returns a short-lived URL the
+# browser PUTs the file to. Save the returned signed_id on your record:
+#
+#   product.update(image_key: GemStack::Storage.key_for_signed_id(input[:image]))
+#   GemStack::Storage.url(product.image_key)   # signed download URL
+#
+# Allowed types and the size limit: config.storage (docs/storage.md).
+class UploadsController < ApplicationController
+<% if auth? -%>
+  before :require_login
+<% else -%>
+  # Anyone can upload until you add authentication (gemstack add auth), then:
+  # before :require_login
+<% end -%>
+  rate_limit to: 60, within: 3600, only: :create if respond_to?(:rate_limit)
+
+  accepts :create do
+    required :filename, :string, max_length: 255
+    required :content_type, :string, max_length: 100
+    required :byte_size, :integer, gt: 0
+  end
+  returns :create, UploadSerializer
+
+  def create
+    upload = GemStack::Storage.direct_upload(**input.slice(:filename, :content_type, :byte_size))
+    result = UploadSerializer::Result.new(signed_id: upload[:signed_id], url: upload[:url],
+                                          http_method: upload[:method], headers: upload[:headers])
+    render result, status: :created, serializer: UploadSerializer
+  end
+end

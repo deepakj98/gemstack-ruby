@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+require_relative "../test_helper"
+
+class <%= class_name %>Test < GemStack::TestCase
+  def test_anonymous_users_are_denied
+    refute <%= class_name %>.new(nil, Struct.new(:user_id).new(1)).update?
+  end
+end

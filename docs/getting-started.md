@@ -115,6 +115,7 @@ bin/gemstack         CLI binstub for this app's bundle
 ```
 
 There is no User model, no authentication and no CRUD: you decide what the
-application contains.
+application contains. Add them when you need them: `gemstack add auth`
+([authentication](authentication.md)), `gemstack add storage` ([storage](storage.md)).
 
 Next: [routing](routing.md), [controllers](controllers.md), [configuration](configuration.md).

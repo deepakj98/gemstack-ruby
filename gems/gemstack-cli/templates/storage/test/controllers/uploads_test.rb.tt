@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+
+require_relative "../test_helper"
+
+class UploadsTest < GemStack::TestCase
+<% if auth? -%>
+  def setup
+    sign_in_as(User.create(email: "uploader@example.com", password: "correct horse battery staple"))
+  end
+
+<% end -%>
+  def test_direct_upload
+    post_json "/api/uploads", { filename: "cat.png", content_type: "image/png", byte_size: 4 }
+
+    assert_status 201
+    signed_id = json_body["signed_id"]
+    put json_body["url"], "\x89PNG", "CONTENT_TYPE" => "image/png"
+
+    assert_status 201
+    key = GemStack::Storage.key_for_signed_id(signed_id)
+    assert_equal "\x89PNG".b, GemStack::Storage.download(key).b
+  end
+
+  def test_refuses_other_types
+    post_json "/api/uploads", { filename: "page.html", content_type: "text/html", byte_size: 10 }
+
+    assert_error 422, "validation_failed"
+    assert json_body["errors"]["content_type"]
+  end
+end

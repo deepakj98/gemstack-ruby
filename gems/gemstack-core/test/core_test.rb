@@ -161,3 +161,35 @@ class SetupTest < Minitest::Test
     end
   end
 end
+
+class SecretTest < Minitest::Test
+  def teardown
+    GemStack.reset!
+    ENV.delete("SECRET_KEY_BASE")
+  end
+
+  def test_local_secret_is_generated_once_and_kept_private
+    Dir.mktmpdir do |dir|
+      GemStack.config.root = dir
+      first = GemStack.config.secret_key_base
+      GemStack.reset!
+      GemStack.config.root = dir
+
+      assert_equal 128, first.size
+      assert_equal first, GemStack.config.secret_key_base
+      assert_equal "600", format("%o", File.stat("#{dir}/tmp/test_secret").mode & 0o777)
+    end
+  end
+
+  def test_production_requires_secret_key_base
+    GemStack.env = "production"
+
+    assert_raises(GemStack::ConfigurationError) { GemStack.key_for("storage") }
+    ENV["SECRET_KEY_BASE"] = "x" * 64
+    GemStack.reset!
+    GemStack.env = "production"
+
+    assert_equal 32, GemStack.key_for("storage").bytesize
+    refute_equal GemStack.key_for("storage"), GemStack.key_for("other")
+  end
+end

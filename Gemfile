@@ -5,6 +5,7 @@ source "https://rubygems.org"
 # Every GemStack gem is developed in this monorepo.
 path "gems" do
   gem "gemstack"
+  gem "gemstack-auth"
   gem "gemstack-cache"
   gem "gemstack-cli"
   gem "gemstack-contract"
@@ -13,11 +14,16 @@ path "gems" do
   gem "gemstack-dev"
   gem "gemstack-http"
   gem "gemstack-jobs"
+  gem "gemstack-mail"
   gem "gemstack-realtime"
   gem "gemstack-schema"
+  gem "gemstack-storage"
 end
 
 group :development, :test do
+  gem "argon2", "~> 2.3" # gemstack-auth password hashing (apps get it via gemstack-auth)
+  gem "aws-sdk-s3", "~> 1.232" # optional in apps (storage :s3 service); tested with stubbed responses
+  gem "bcrypt", "~> 3.1" # verifying legacy bcrypt hashes; tested here
   gem "benchmark" # a bundled (not default) gem since Ruby 4.0
   gem "brotli", "~> 0.8" # optional in apps; tested here
   gem "minitest", "~> 5.25"

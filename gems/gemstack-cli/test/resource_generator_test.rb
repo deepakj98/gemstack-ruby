@@ -312,4 +312,92 @@ class AddGeneratorTest < Minitest::Test
   def test_unknown_feature
     assert_raises(Thor::Error) { GemStack::CLI::AddGenerator.new("teleport", root: @root) }
   end
+
+  def auth_app
+    FileUtils.mkdir_p(%W[#{@root}/app/controllers #{@root}/db/migrations])
+    File.write("#{@root}/Gemfile", %(path "/x/gems" do\n  gem "gemstack"\n  gem "gemstack-db"\n  gem "gemstack-jobs"\nend\n))
+    File.write("#{@root}/app/controllers/application_controller.rb",
+               "# Shared.\nclass ApplicationController < GemStack::Controller\nend\n")
+    File.write("#{@root}/config/routes.rb", "GemStack.routes do\nend\n")
+    File.write("#{@root}/.env.example", "# PORT=3000\n")
+  end
+
+  def add_auth = GemStack::CLI::AddGenerator.new("auth", root: @root, output: @out, install: false).run
+
+  def test_auth
+    auth_app
+    add_auth
+
+    gemfile = File.read("#{@root}/Gemfile")
+    assert_includes gemfile, %(  gem "gemstack"\n  gem "gemstack-auth"\n  gem "gemstack-db"\n  gem "gemstack-jobs"\n  gem "gemstack-mail"\n)
+    assert_includes File.read("#{@root}/app/controllers/application_controller.rb"),
+                    "class ApplicationController < GemStack::Controller\n  include GemStack::Auth::Controller\n"
+    routes = File.read("#{@root}/config/routes.rb")
+    assert_includes routes, %(GemStack.routes do\n  # Authentication)
+    assert_includes routes, %(  post "/auth/login", to: "sessions#create"\n)
+    migrations = Dir.children("#{@root}/db/migrations").sort
+    assert_equal 2, migrations.size
+    assert_match(/\A\d{14}_create_gemstack_jobs\.rb\z/, migrations[0])
+    assert_match(/\A\d{14}_create_auth_tables\.rb\z/, migrations[1])
+    %w[app/models/user.rb app/controllers/sessions_controller.rb app/mailers/auth_mailer.rb
+       app/mailers/templates/auth_mailer/password_reset.html.erb app/policies/application_policy.rb
+       test/controllers/auth_test.rb frontend/lib/auth.ts frontend/app/login/page.tsx].each do |file|
+      assert File.exist?("#{@root}/#{file}"), "#{file} was not generated"
+    end
+    assert_includes File.read("#{@root}/.env.example"), "SMTP_URL"
+    assert_includes File.read("#{@root}/test/test_helper.rb"), "GemStack::TestCase.include GemStack::Auth::Testing"
+
+    add_auth # idempotent
+
+    assert_equal 2, Dir.children("#{@root}/db/migrations").size
+    assert_equal 1, File.read("#{@root}/config/routes.rb").scan("/auth/login").size
+    assert_equal 1, File.read("#{@root}/app/controllers/application_controller.rb").scan("Auth::Controller").size
+  end
+
+  def test_auth_needs_a_database
+    File.write("#{@root}/Gemfile", %(gem "gemstack", "~> 0.1.0"\n))
+    error = assert_raises(Thor::Error) { add_auth }
+
+    assert_includes error.message, "without a database"
+  end
+
+  def test_auth_refuses_to_overwrite_a_user_model
+    auth_app
+    FileUtils.mkdir_p("#{@root}/app/models")
+    File.write("#{@root}/app/models/user.rb", "class User < GemStack::Model\nend\n")
+
+    assert_raises(Thor::Error) { add_auth }
+  end
+
+  def test_storage_with_auth
+    auth_app
+    File.write("#{@root}/.gitignore", "/tmp/\n")
+    add_auth
+    GemStack::CLI::AddGenerator.new("storage", root: @root, output: @out, install: false).run
+
+    controller = File.read("#{@root}/app/controllers/uploads_controller.rb")
+    assert_includes controller, "  before :require_login\n"
+    assert_includes File.read("#{@root}/test/controllers/uploads_test.rb"), "sign_in_as"
+    assert_includes File.read("#{@root}/config/routes.rb"), %(post "/uploads", to: "uploads#create")
+    assert_includes File.read("#{@root}/.gitignore"), "/storage/\n"
+    assert File.exist?("#{@root}/frontend/lib/upload.ts")
+    refute File.exist?("#{@root}/app/controllers/uploads_controller.rb.tt")
+  end
+
+  def test_storage_without_auth
+    auth_app
+    GemStack::CLI::AddGenerator.new("storage", root: @root, output: @out, install: false).run
+
+    assert_includes File.read("#{@root}/app/controllers/uploads_controller.rb"), "  # before :require_login\n"
+  end
+
+  def test_policy_generator
+    FileUtils.mkdir_p("#{@root}/app/policies")
+    File.write("#{@root}/app/policies/application_policy.rb", "")
+    GemStack::CLI::PolicyGenerator.new("Order", root: @root, output: @out).run
+    policy = File.read("#{@root}/app/policies/order_policy.rb")
+
+    assert_includes policy, "class OrderPolicy < ApplicationPolicy"
+    assert_includes File.read("#{@root}/test/policies/order_policy_test.rb"), "class OrderPolicyTest < GemStack::TestCase"
+  end
 end
