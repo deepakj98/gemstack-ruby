@@ -5,7 +5,7 @@ it is listed** — rendering a model without a serializer is an error, not a dum
 of every column.
 
 ```ruby
-class ProductSerializer < GemStack::Serializer
+class ProductSerializer < ApplicationSerializer
   attributes :id, :name, :price, :active, :created_at      # types inferred from Product's fields
 
   attribute :display_price, :string do |product|           # computed; typed explicitly

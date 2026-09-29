@@ -35,6 +35,7 @@ module GemStack
       end
 
       def run
+        ensure_base_classes(@root, :job)
         template_files("job", override_root: @root).each do |rel, source|
           target = File.join(@root, rel.delete_suffix(".tt").gsub("%file_name%", file_name))
           write(target, render(File.read(source), source))

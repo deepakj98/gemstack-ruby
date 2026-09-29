@@ -1,0 +1,40 @@
+# frozen_string_literal: true
+
+# Production settings: applied after config/app.rb when GEMSTACK_ENV=production.
+# Each line shows the default value — uncomment one to change it.
+#
+# Secrets and connections come from environment variables, never from files:
+# SECRET_KEY_BASE, <% if database? %>DATABASE_URL, <% end %>SMTP_URL, MAIL_FROM, APP_URL, REDIS_URL…
+# `gemstack doctor --production` checks what's missing (docs/deployment.md).
+GemStack.configure do |config|
+  # ── Code ────────────────────────────────────────────────────────────────
+  # config.eager_load = true                   # load all code at boot (copy-on-write friendly with Puma workers)
+  # config.jit = :yjit                         # Ruby's JIT (or GEMSTACK_JIT=yjit|zjit|off)
+
+  # ── Logging ─────────────────────────────────────────────────────────────
+  # config.logger.level = :info
+  # config.logger.format = :json               # one JSON object per line, with the request id
+
+  # ── HTTP ────────────────────────────────────────────────────────────────
+  # config.http.show_exceptions = false        # never send exception details to clients
+  # config.http.hsts = "max-age=63072000; includeSubDomains"   # on HTTPS requests; nil if your proxy sets it
+  # config.http.cors.origins = ["https://app.example.com"]    # only if the frontend is on another domain
+  # config.http.max_body_size = 10 * 1024 * 1024               # larger requests get 413
+<% if database? -%>
+
+  # ── Database ────────────────────────────────────────────────────────────
+  # config.db.pool_size = 5                    # connections per process (GEMSTACK_MAX_THREADS)
+  # config.db.statement_timeout = 5_000        # ms; stop runaway queries (PostgreSQL, MySQL)
+  # config.db.slow_query_ms = 500              # slower queries are logged at WARN
+<% end -%>
+
+  # ── Cache: :memory is per process — use Redis with several processes or servers ──
+  # config.cache.store = :redis                # add gem "redis-client"; REDIS_URL
+
+  # ── Background jobs (`gemstack jobs`) ───────────────────────────────────
+  # config.jobs.concurrency = 5                # threads per worker (or GEMSTACK_JOB_CONCURRENCY)
+
+  # ── Mail ────────────────────────────────────────────────────────────────
+  # config.mail.delivery = :smtp               # SMTP_URL=smtp://user:password@smtp.example.com:587
+  # config.mail.default_from = "App <hello@example.com>"      # or MAIL_FROM
+end

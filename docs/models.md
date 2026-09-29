@@ -38,8 +38,14 @@ See Sequel's [schema modification guide](https://sequel.jeremyevans.net/rdoc/fil
 
 ## Defining models
 
+Models inherit from `ApplicationModel` (`app/models/application_model.rb`,
+created by `gemstack new`), the place for plugins and helpers every model
+shares; it is a `GemStack::Model`, which is a `Sequel::Model`. It is defined
+with `ApplicationModel = Class.new(GemStack::Model)` so Sequel doesn't bind it
+to an `application_models` table — keep that line as it is.
+
 ```ruby
-class Product < GemStack::Model
+class Product < ApplicationModel
   field :name, :string, null: false, size: 120
   field :price, :decimal, null: false, gt: 0
   field :description, :text

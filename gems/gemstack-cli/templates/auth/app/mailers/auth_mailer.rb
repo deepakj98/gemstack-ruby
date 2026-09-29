@@ -2,7 +2,7 @@
 
 # Account emails. Templates: app/mailers/templates/auth_mailer/*.erb.
 # Links point at the Next.js pages (config.auth.app_url, APP_URL in production).
-class AuthMailer < GemStack::Mailer
+class AuthMailer < ApplicationMailer
   def password_reset(user_id)
     @user = User[user_id] or return
     token, = GemStack::Auth::Tokens.issue(@user.id, purpose: "password_reset")

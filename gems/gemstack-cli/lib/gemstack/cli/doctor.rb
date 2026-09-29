@@ -290,7 +290,7 @@ module GemStack
       end
 
       def jobs_used?
-        %w[app/jobs/*.rb app/mailers/*.rb].any? { |glob| !Dir.glob(path(glob)).empty? }
+        Generator.background_work?(@root)
       end
 
       def location(error)

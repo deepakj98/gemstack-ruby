@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Where and how the browser sends the file (see UploadsController).
-class UploadSerializer < GemStack::Serializer
+class UploadSerializer < ApplicationSerializer
   Result = Data.define(:signed_id, :url, :http_method, :headers)
 
   attribute :signed_id, :string

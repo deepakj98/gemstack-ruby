@@ -1,10 +1,11 @@
 # Mail
 
-`gemstack-mail` comes with `gemstack add auth`, or add it on its own
-(`gem "gemstack-mail"`). Mailers live in `app/mailers`:
+New apps include `gemstack-mail` and `app/mailers/application_mailer.rb`, the
+base class for your mailers (shared `default from:` and helpers). Mailers live
+in `app/mailers`:
 
 ```ruby
-class OrderMailer < GemStack::Mailer
+class OrderMailer < ApplicationMailer
   default from: "Shop <orders@shop.example>"
 
   def shipped(order_id)

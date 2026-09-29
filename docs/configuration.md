@@ -15,7 +15,10 @@ end
 
 Per-environment overrides go in `config/environments/<env>.rb` (loaded after
 `config/app.rb`). The environment comes from `GEMSTACK_ENV`, then `RACK_ENV`,
-defaulting to `development`.
+defaulting to `development`. New apps get `development.rb`, `test.rb` and
+`production.rb` listing the settings that usually differ per environment —
+code reloading, logging, error details, the database, cache, jobs and mail —
+commented out and showing their defaults: uncomment a line to change it.
 
 Every setting has a default; setting an unknown name raises `NoMethodError`
 immediately (with a "did you mean" suggestion).

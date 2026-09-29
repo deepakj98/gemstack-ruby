@@ -54,7 +54,7 @@ module GemStack
         database_adapter if database? # fail early on an unknown --database
         @output.puts("Creating GemStack application #{name} in #{destination}")
         render_directory("app", destination, skip: lambda { |rel|
-          !database? && (rel.start_with?("db/") || rel == "config/database.yml.tt")
+          !database? && (rel.start_with?("db/", "app/models/") || rel == "config/database.yml.tt")
         })
         render_directory("frontend", File.join(destination, "frontend")) if frontend?
         install unless @options[:skip_install]
@@ -86,6 +86,8 @@ module GemStack
 
         run_step("npm install", File.join(destination, "frontend"), "npm", "install", "--no-fund",
                  "--no-audit")
+        # The TypeScript contract, so frontend/lib/api/generated exists from the start.
+        run_step("gemstack contract", destination, "bin/gemstack", "contract", "--quiet") if bundled
       end
 
       # Best effort: a missing or password-protected database server shouldn't fail `new`.

@@ -70,6 +70,7 @@ module GemStack
 
       def add_storage
         add_gem("gemstack-storage")
+        ensure_base_classes(@root, :serializer)
         copy_feature_templates("storage")
         add_routes(%(post "/uploads", to: "uploads#create" # direct uploads (gemstack add storage)\n),
                    marker: "uploads#create")
@@ -94,6 +95,7 @@ module GemStack
         add_gem("gemstack-mail")
         add_gem("gemstack-auth")
         JobGenerator.install_migration(@root, output: @output) # emails are sent from background jobs
+        ensure_base_classes(@root, :model, :serializer, :mailer)
         copy_feature_templates("auth", skip_migration: "*_create_auth_tables.rb")
         include_in_application_controller("GemStack::Auth::Controller")
         add_routes(AUTH_ROUTES, marker: "/auth/login")

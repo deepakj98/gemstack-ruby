@@ -14,6 +14,7 @@ path "<%= gemstack_path %>" do
   gem "gemstack-db"
 <% end -%>
   gem "gemstack-jobs"
+  gem "gemstack-mail"
   gem "gemstack-dev"
   gem "gemstack-http"
   gem "gemstack-schema"
@@ -24,6 +25,7 @@ gem "gemstack", "~> <%= version %>"
 gem "gemstack-db", "~> <%= version %>"
 <% end -%>
 gem "gemstack-jobs", "~> <%= version %>"
+gem "gemstack-mail", "~> <%= version %>"
 <% end -%>
 gem "puma", ">= 6.4"
 <% if database? -%>

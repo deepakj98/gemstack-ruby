@@ -26,7 +26,9 @@ class AppGeneratorTest < Minitest::Test
     root = generate
 
     expected = %w[
-      .env.example .gitignore .ruby-version .tool-versions Gemfile README.md app/controllers/application_controller.rb bin/gemstack config.ru
+      .env.example .gitignore .ruby-version .tool-versions Gemfile README.md app/controllers/application_controller.rb
+      app/jobs/application_job.rb app/mailers/application_mailer.rb app/mailers/templates/.keep
+      app/models/application_model.rb app/serializers/application_serializer.rb bin/gemstack config.ru
       config/app.rb config/database.yml config/environments/development.rb config/environments/production.rb
       config/environments/test.rb config/puma.rb config/routes.rb db/migrations/.keep db/seeds.rb
       frontend/app/globals.css frontend/app/layout.tsx frontend/app/page.tsx frontend/app/providers.tsx
@@ -43,7 +45,8 @@ class AppGeneratorTest < Minitest::Test
 
     assert_equal ["application_controller.rb"], Dir.children(File.join(root, "app/controllers"))
     assert_match(/GemStack\.routes do\nend/, File.read(File.join(root, "config/routes.rb")))
-    refute Dir.exist?(File.join(root, "app/models"))
+    assert_equal ["application_model.rb"], Dir.children(File.join(root, "app/models")), "only the base class"
+    assert_equal ["application_job.rb"], Dir.children(File.join(root, "app/jobs"))
   end
 
   def test_ruby_version_is_pinned

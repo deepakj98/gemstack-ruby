@@ -2,7 +2,7 @@
 
 # Enqueue with <%= class_name %>.perform_later(...) — arguments must be JSON values (pass ids, not records).
 # Runs in `gemstack jobs` (and in `gemstack dev`). Delivery is at-least-once: keep perform idempotent.
-class <%= class_name %> < GemStack::Job
+class <%= class_name %> < ApplicationJob
 <% if queue_name -%>
   queue :<%= queue_name %>
 <% end -%>
