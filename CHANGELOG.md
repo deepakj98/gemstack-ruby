@@ -2,6 +2,15 @@
 
 All GemStack gems are released together with one version.
 
+## 0.2.2
+
+- A designed welcome page for new apps (`frontend/app/page.tsx` + `page.module.css`): live Next.js and
+  Ruby API checks, next steps with copyable commands, links to `/api/docs` and the guides; light and dark
+- Fix: a new app's generated `types.ts` was empty, so `tsc` and `next build` failed until the first resource
+- Command reference (`docs/cli.md`) and a fuller command table in the README
+- GemStack is developed and maintained by Adware Technologies (https://www.adwaretech.com); the MIT
+  license's copyright holder is Adware Technologies
+
 ## 0.2.1
 
 - New apps get `config/environments/{development,test,production}.rb` listing the settings that usually

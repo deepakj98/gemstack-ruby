@@ -26,7 +26,7 @@ class ArchitectureTest < Minitest::Test
       spec = specs.fetch(name)
 
       assert_equal GemStack::VERSION, spec.version.to_s, "#{name}: rake version:set keeps every gem on one version"
-      assert_equal ["Shoaib Malik"], spec.authors
+      assert_equal ["Adware Technologies", "Shoaib Malik"], spec.authors
       assert_equal "MIT", spec.license
       assert_equal "true", spec.metadata["rubygems_mfa_required"]
       %w[source_code_uri changelog_uri bug_tracker_uri documentation_uri].each do |key|

@@ -51,6 +51,8 @@ module GemStack
           "export type #{name} = #{object_type(type[:fields], 0)};\n"
         end
         body.unshift(PAGE_TYPES) if paginated?
+        # No types yet (a new app): still a module, or `export type * from "./types"` fails to compile.
+        body << "export {};\n" if body.empty?
         "#{header}\n#{body.join("\n")}"
       end
 

@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 # All GemStack gems share one version; change it with `rake version:set[x.y.z]`.
-version = "0.2.1"
+version = "0.2.2"
 
 Gem::Specification.new do |spec|
   spec.name = "gemstack-http"
   spec.version = version
   spec.summary = "GemStack HTTP: router, middleware, controllers, params and JSON for Rack"
   spec.description = "The API layer of GemStack, built on Rack 3."
-  spec.authors = ["Shoaib Malik"]
+  spec.authors = ["Adware Technologies", "Shoaib Malik"]
   spec.email = ["gemstack26@gmail.com"]
   spec.license = "MIT"
   spec.homepage = "https://github.com/gemstack-rb/gemstack"

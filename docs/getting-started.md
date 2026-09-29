@@ -33,7 +33,7 @@ Open **http://localhost:3000** — the starter page calls
 `gemstack dev` prints:
 
 ```text
-  GemStack v0.2.1 · development
+  GemStack v0.2.2 · development
 
   ✓ Gateway    http://localhost:3000  (/api/* → Ruby, everything else → Next.js)
   … Ruby API   starting on 127.0.0.1:52011 (internal)
@@ -121,6 +121,8 @@ bin/gemstack         CLI binstub for this app's bundle
 There is no User model, no authentication and no CRUD: you decide what the
 application contains. Add them when you need them: `gemstack add auth`
 ([authentication](authentication.md)), `gemstack add storage` ([storage](storage.md)).
+
+All commands and generators: [command reference](cli.md).
 
 Something not working? `gemstack doctor` checks your setup and says what to fix; while `gemstack dev`
 runs, [http://localhost:3000/api/docs](http://localhost:3000/api/docs) lists every endpoint

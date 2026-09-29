@@ -3,7 +3,7 @@
 GemStack cache: GemStack.cache.fetch with memory, null and Redis stores.
 
 Part of [GemStack](https://github.com/gemstack-rb/gemstack), a modular Ruby API framework for Next.js
-applications. All GemStack gems are developed together in that repository and released with the same
+applications by [Adware Technologies](https://www.adwaretech.com). All GemStack gems are developed together in that repository and released with the same
 version.
 
 ## Installation
@@ -21,4 +21,4 @@ Source, issues and pull requests: [gemstack-rb/gemstack](https://github.com/gems
 
 ## License
 
-MIT — see [LICENSE.txt](LICENSE.txt).
+Open source under the MIT License — © [Adware Technologies](https://www.adwaretech.com). See [LICENSE.txt](LICENSE.txt).
