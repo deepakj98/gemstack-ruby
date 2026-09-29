@@ -2,9 +2,24 @@
 
 ## Requirements
 
-Ruby ≥ 4.0, Bundler, Node.js ≥ 20 and npm. New apps use SQLite, which needs
-nothing else; `--database=postgresql` or `--database=mysql2` need that server
-([databases](database.md)).
+- **Ruby 3.3 or newer** (3.3, 3.4 and 4.0 are tested) with Bundler
+- **Node.js 20.9 or newer** and npm (for the Next.js frontend)
+- New apps use SQLite, which needs nothing else; `--database=postgresql` or
+  `--database=mysql2` need that server ([databases](database.md))
+
+Install Ruby and Node.js with whatever you already use — for example:
+
+| Tool | Ruby | Node.js |
+| --- | --- | --- |
+| rbenv / nodenv | `rbenv install 3.4.1 && rbenv global 3.4.1` | `nodenv install 22.11.0 && nodenv global 22.11.0` |
+| rvm / nvm | `rvm install 3.4.1 && rvm use 3.4.1 --default` | `nvm install 22 && nvm alias default 22` |
+| asdf | `asdf install ruby 3.4.1 && asdf set -u ruby 3.4.1` | `asdf install nodejs 22.11.0 && asdf set -u nodejs 22.11.0` |
+| mise | `mise use -g ruby@3.4` | `mise use -g node@22` |
+| Homebrew | `brew install ruby` | `brew install node@22` |
+
+`ruby -v` and `node -v` show what's active. If a project folder pins another
+version (a `.ruby-version`, `.nvmrc` or `.tool-versions` in it or a parent
+folder), your tool switches to that version there.
 
 Install the `gemstack` command:
 
@@ -12,7 +27,10 @@ Install the `gemstack` command:
 gem install gemstack
 ```
 
-New apps get `.ruby-version` and `.tool-versions` pinned to the Ruby that created them.
+New apps pin the Ruby that created them in `.ruby-version` and `.tool-versions`,
+and Node.js in `.node-version`, `.nvmrc` and `.tool-versions`, so rbenv, rvm,
+chruby, asdf, mise, nvm, fnm and nodenv all pick the right versions inside the
+app. `gemstack doctor` says if they don't, with the command for your tool.
 
 ## Create an application
 
@@ -33,7 +51,7 @@ Open **http://localhost:3000** — the starter page calls
 `gemstack dev` prints:
 
 ```text
-  GemStack v0.2.2 · development
+  GemStack v0.2.3 · development
 
   ✓ Gateway    http://localhost:3000  (/api/* → Ruby, everything else → Next.js)
   … Ruby API   starting on 127.0.0.1:52011 (internal)

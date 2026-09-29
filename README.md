@@ -109,13 +109,14 @@ Every option, the field types and how to add other Next.js pages:
 
 ## Installation
 
-Requirements: **Ruby ≥ 4.0** (developed on 4.0.7), Node.js ≥ 20 and npm. Apps
+Requirements: **Ruby 3.3 or newer** (tested on 3.3, 3.4 and 4.0; installed any way you like —
+rbenv, rvm, asdf, mise, chruby or a package manager), **Node.js 20.9+** and npm. Apps
 use SQLite by default; `--database=postgresql` or `--database=mysql2` for a
 server database ([databases](docs/database.md)).
 
 ```bash
 gem install gemstack
-gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.2"
+gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.2.3"
 ```
 
 The `gemstack` gem is the framework: it brings every module an app needs

@@ -38,7 +38,7 @@ gem "<%= driver_gem %>", "<%= driver_version %>" # the <%= database_adapter %> d
 # gem "stripe"
 
 group :development, :test do
-  gem "irb" # `gemstack console`; a bundled (not default) gem since Ruby 4.0
+  gem "irb" # `gemstack console` (a bundled gem, not a default one, in newer Rubies)
   gem "minitest", "~> 5.25"
   gem "rack-test", "~> 2.2"
 end

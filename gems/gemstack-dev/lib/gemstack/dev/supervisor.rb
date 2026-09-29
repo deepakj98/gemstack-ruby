@@ -22,7 +22,10 @@ module GemStack
       end
 
       def run
-        prepare_frontend if frontend?
+        if frontend?
+          check_node!
+          prepare_frontend
+        end
         start
         install_signal_handlers
         loop_until_stopped
@@ -106,6 +109,18 @@ module GemStack
         return Array(@dev.frontend_command) + ["--port", port.to_s] if @dev.frontend_command
 
         [frontend_dir.join("node_modules/.bin/next").to_s, "dev", "--hostname", LOOPBACK, "--port", port.to_s]
+      end
+
+      # Next.js exits at once on an old Node.js with a line that's easy to miss
+      # among the other output; say it up front, with the command that fixes it.
+      def check_node!(node = Toolchain.node)
+        return if node && Toolchain.node_ok?(node[:version])
+
+        wanted = [@root.join(".node-version"), @root.join(".nvmrc")].find(&:file?)&.read&.strip
+        wanted = Toolchain::LTS_NODE if wanted.nil? || wanted.empty?
+        found = node ? "Node.js #{node[:version]} (#{node[:path]})" : "no `node` on the PATH"
+        raise Error, "Next.js needs Node.js #{Toolchain::MIN_NODE.join(".")} or newer; found #{found}.\n  " \
+                     "→ #{Toolchain.node_hint(wanted, Toolchain.node_manager(node&.fetch(:path)))}"
       end
 
       # Installs frontend dependencies on first run so `gemstack new && gemstack dev`

@@ -110,6 +110,21 @@ class SupervisorTest < Minitest::Test
     refute_predicate api, :running?
   end
 
+  def test_an_old_node_stops_gemstack_dev_with_the_fix
+    config = GemStack::Config.new
+    supervisor = GemStack::Dev::Supervisor.new(root: @root, config: config, env: {},
+                                               terminal: GemStack::Dev::Terminal.new(@io, color: false))
+    File.write("#{@root}/.nvmrc", "22.11.0\n")
+    error = assert_raises(GemStack::Error) do
+      supervisor.send(:check_node!, { version: "18.20.1", path: "/Users/me/.nvm/versions/node/v18.20.1/bin/node" })
+    end
+
+    assert_includes error.message, "found Node.js 18.20.1"
+    assert_includes error.message, "nvm install 22.11.0 && nvm use 22.11.0"
+    assert_nil supervisor.send(:check_node!, { version: "22.11.0", path: "/usr/bin/node" })
+    assert_includes assert_raises(GemStack::Error) { supervisor.send(:check_node!, nil) }.message, "no `node` on the PATH"
+  end
+
   def test_job_worker_runs_only_with_the_postgres_queue_and_its_migration
     require "gemstack/jobs"
     config = GemStack::Config.new

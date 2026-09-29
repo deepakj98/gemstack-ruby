@@ -26,7 +26,8 @@ class AppGeneratorTest < Minitest::Test
     root = generate
 
     expected = %w[
-      .env.example .gitignore .ruby-version .tool-versions Gemfile README.md app/controllers/application_controller.rb
+      .env.example .gitignore .node-version .nvmrc .ruby-version .tool-versions Gemfile README.md
+      app/controllers/application_controller.rb
       app/jobs/application_job.rb app/mailers/application_mailer.rb app/mailers/templates/.keep
       app/models/application_model.rb app/serializers/application_serializer.rb bin/gemstack config.ru
       config/app.rb config/database.yml config/environments/development.rb config/environments/production.rb
@@ -53,8 +54,12 @@ class AppGeneratorTest < Minitest::Test
   def test_ruby_version_is_pinned
     root = generate
 
+    node = GemStack::Dev::Toolchain.pinned_node_version
+
     assert_equal "#{RUBY_VERSION}\n", File.read(File.join(root, ".ruby-version"))
-    assert_equal "ruby #{RUBY_VERSION}\n", File.read(File.join(root, ".tool-versions"))
+    assert_equal "ruby #{RUBY_VERSION}\nnodejs #{node}\n", File.read(File.join(root, ".tool-versions"))
+    assert_equal "#{node}\n", File.read(File.join(root, ".node-version"))
+    assert_equal "#{node}\n", File.read(File.join(root, ".nvmrc"))
   end
 
   def test_templates_are_rendered
@@ -122,6 +127,8 @@ class AppGeneratorTest < Minitest::Test
     root = generate(skip_frontend: true)
 
     refute Dir.exist?(File.join(root, "frontend"))
+    refute File.exist?(File.join(root, ".nvmrc")), "no Node.js pin without a frontend"
+    assert_equal "ruby #{RUBY_VERSION}\n", File.read(File.join(root, ".tool-versions"))
   end
 
   def test_database_by_default_and_skip_database

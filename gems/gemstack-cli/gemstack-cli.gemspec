@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # All GemStack gems share one version; change it with `rake version:set[x.y.z]`.
-version = "0.2.2"
+version = "0.2.3"
 
 Gem::Specification.new do |spec|
   spec.name = "gemstack-cli"
@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.email = ["gemstack26@gmail.com"]
   spec.license = "MIT"
   spec.homepage = "https://github.com/gemstack-rb/gemstack"
-  spec.required_ruby_version = ">= 4.0"
+  spec.required_ruby_version = ">= 3.3"
   spec.files = Dir["README.md", "LICENSE.txt", "CHANGELOG.md", "lib/**/*.rb", "templates/**/*", "templates/**/.*",
                    "exe/*"]
   spec.require_paths = ["lib"]

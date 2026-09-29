@@ -357,7 +357,7 @@ by the test suite.
   positionally only.
 - **CLI commands log at WARN** and hide SQL; the dev server logs SQL at DEBUG.
 
-## D-030 Ruby 4.0 is the minimum version
+## D-030 Ruby 4.0 is the minimum version — **superseded by D-066 (Ruby 3.3)**
 
 **Decision.** All GemStack gems declare `required_ruby_version >= 4.0`. The
 framework is developed and tested on Ruby 4.0.7, the latest release when this
@@ -882,6 +882,28 @@ jobs worker would broadcast through the in-process memory broker.
   the catalog (`to_regclass`, `information_schema`, `sqlite_master`) instead.
 - A jobs test assumed NOTIFY and timed out on MySQL; tests now use the
   mechanism each adapter actually has.
+
+## D-066 Ruby 3.3+, and no assumed version manager
+
+**Context.** D-030 required Ruby 4.0. In practice most developers still run
+Ruby 3.3 or 3.4, and a colleague couldn't install GemStack without first
+upgrading Ruby; GemStack's messages also assumed asdf.
+
+**Decision.** Every gem requires Ruby **3.3 or newer**. `script/ruby-matrix`
+runs the full suite (SQLite and PostgreSQL, Redis) in the official
+`ruby:3.3`, `ruby:3.4` and `ruby:4.0` images, and `script/e2e` was run inside
+`ruby:3.3`; RuboCop targets 3.3, so newer syntax can't slip in. Nothing
+assumes a version manager: new apps pin Ruby in `.ruby-version` (rbenv, rvm,
+chruby, asdf, mise) and `.tool-versions` (asdf, mise), and Node.js in
+`.node-version` (fnm, nodenv, mise, asdf), `.nvmrc` (nvm) and
+`.tool-versions`. `gemstack doctor` and `gemstack dev` detect which manager
+installed the running Ruby or Node from its path and print that manager's
+command (or a generic one); `gemstack dev` refuses an old Node.js up front
+instead of letting Next.js exit.
+
+**Reasoning.** The code already only needed Ruby 3.2+ features (Data,
+anonymous argument forwarding, endless methods); nothing required 4.0.
+Lowering the floor costs a test matrix, not compatibility code.
 
 ---
 
