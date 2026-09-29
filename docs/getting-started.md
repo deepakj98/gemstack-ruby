@@ -5,10 +5,10 @@
 Ruby ≥ 4.0, Bundler, Node.js ≥ 20, npm and PostgreSQL (or
 `gemstack new NAME --skip-database` for an API without a database).
 
-Install the `gemstack` command (see the [README](../README.md#installation)):
+Install the `gemstack` command:
 
 ```bash
-bundle exec rake gems:install   # from a GemStack checkout; later simply: gem install gemstack
+gem install gemstack
 ```
 
 New apps get `.ruby-version` and `.tool-versions` pinned to the Ruby that created them.

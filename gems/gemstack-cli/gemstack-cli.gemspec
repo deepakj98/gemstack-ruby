@@ -12,7 +12,8 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
   spec.homepage = "https://github.com/gemstack-rb/gemstack"
   spec.required_ruby_version = ">= 4.0"
-  spec.files = Dir["README.md", "LICENSE.txt", "CHANGELOG.md", "lib/**/*.rb", "templates/**/*", "templates/**/.*", "exe/*"]
+  spec.files = Dir["README.md", "LICENSE.txt", "CHANGELOG.md", "lib/**/*.rb", "templates/**/*", "templates/**/.*",
+                   "exe/*"]
   spec.require_paths = ["lib"]
   spec.bindir = "exe"
   spec.executables = ["gemstack"]
