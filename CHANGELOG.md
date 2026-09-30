@@ -2,6 +2,11 @@
 
 All GemStack gems are released together with one version.
 
+## Unreleased
+
+- Docs: associations and eager loading in [models](docs/models.md): the Sequel equivalents of Rails'
+  `includes`, `eager_load` and `joins`, and how to catch N+1 queries.
+
 ## 0.3.0
 
 **GemStack is now one gem.** The framework — core, cache, schema, http, db, jobs, mail, storage, contract,
