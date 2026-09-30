@@ -1,27 +1,13 @@
 # gemstack-storage
 
-GemStack storage: disk and S3 services, signed URLs, direct uploads.
+**Merged into [`gemstack`](https://rubygems.org/gems/gemstack) in GemStack 0.3.0.**
 
-Part of [GemStack](https://github.com/gemstack-rb/gemstack), a modular Ruby API framework for Next.js
-applications by [Adware Technologies](https://www.adwaretech.com). All GemStack gems are developed together in that repository and released with the same
-version.
+This version is a transition shim: it depends on `gemstack` and loads `gemstack/storage`, so Gemfiles that
+still list `gemstack-storage` keep working. To finish upgrading, remove `gem "gemstack-storage"` from your Gemfile
+and make sure `config/app.rb` has `require "gemstack/storage"` (apps created with 0.3.0 do).
 
-## Installation
-
-Optional module — `gemstack add storage`:
-
-```ruby
-gem "gemstack-storage", "~> 0.1"
-```
-
-## Documentation
-
-- [Guide](https://github.com/gemstack-rb/gemstack/blob/main/docs/storage.md)
-- [All guides](https://github.com/gemstack-rb/gemstack/tree/main/docs) ·
-  [Architecture](https://github.com/gemstack-rb/gemstack/blob/main/ARCHITECTURE.md)
-
-Source, issues and pull requests: [gemstack-rb/gemstack](https://github.com/gemstack-rb/gemstack)
-(this gem lives in `gems/gemstack-storage`).
+GemStack is a modular Ruby API framework for Next.js applications by
+[Adware Technologies](https://www.adwaretech.com) — [gemstack-rb/gemstack](https://github.com/gemstack-rb/gemstack).
 
 ## License
 
