@@ -2,7 +2,7 @@
 
 All GemStack gems are released together with one version.
 
-## Unreleased
+## 0.3.1
 
 - New GemStack logo: a ruby gem on a stack. New apps show it on their welcome page (light and dark
   mode); the logo files are in `docs/assets/logo/`.
