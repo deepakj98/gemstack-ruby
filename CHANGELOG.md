@@ -2,6 +2,11 @@
 
 All GemStack gems are released together with one version.
 
+## Unreleased
+
+- `gemstack` shows the real error when one of its dependencies can't be loaded, instead of saying the
+  gemstack gem is missing.
+
 ## 0.3.1
 
 - New GemStack logo: a ruby gem on a stack. New apps show it on their welcome page (light and dark
