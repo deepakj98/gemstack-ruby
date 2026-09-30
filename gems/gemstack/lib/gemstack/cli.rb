@@ -20,7 +20,7 @@ module GemStack
     require_relative "cli/add_generator"
     require_relative "cli/commands/db"
     require_relative "cli/commands/jobs"
-    require_relative "cli/reload"
+    require_relative "cli/console_methods"
 
     # Commands that need the application's bundle (see Project.ensure_bundle!).
     class << self
@@ -107,7 +107,7 @@ module GemStack
       GemStack.boot!
 
       require "irb"
-      define_reload!
+      TOPLEVEL_BINDING.receiver.extend(ConsoleMethods)
 
       say("GemStack #{GemStack::VERSION} console (#{GemStack.env}). `GemStack.application.reload!` reloads code.")
 

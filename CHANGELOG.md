@@ -3,7 +3,7 @@
 All GemStack gems are released together with one version.
 
 ## Unreleased
-
+- Add `reload!` to the console to reload application code without restarting the console.
 - `gemstack` shows the real error when one of its dependencies can't be loaded, instead of saying the
   gemstack gem is missing.
 
