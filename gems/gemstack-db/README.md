@@ -1,27 +1,13 @@
 # gemstack-db
 
-GemStack database: Sequel models and migrations for SQLite, PostgreSQL and MySQL.
+**Merged into [`gemstack`](https://rubygems.org/gems/gemstack) in GemStack 0.3.0.**
 
-Part of [GemStack](https://github.com/gemstack-rb/gemstack), a modular Ruby API framework for Next.js
-applications by [Adware Technologies](https://www.adwaretech.com). All GemStack gems are developed together in that repository and released with the same
-version.
+This version is a transition shim: it depends on `gemstack` and loads `gemstack/db`, so Gemfiles that
+still list `gemstack-db` keep working. To finish upgrading, remove `gem "gemstack-db"` from your Gemfile
+and make sure `config/app.rb` has `require "gemstack/db"` (apps created with 0.3.0 do).
 
-## Installation
-
-Optional module — added by `gemstack new` (unless --skip-database):
-
-```ruby
-gem "gemstack-db", "~> 0.1"
-```
-
-## Documentation
-
-- [Guide](https://github.com/gemstack-rb/gemstack/blob/main/docs/database.md)
-- [All guides](https://github.com/gemstack-rb/gemstack/tree/main/docs) ·
-  [Architecture](https://github.com/gemstack-rb/gemstack/blob/main/ARCHITECTURE.md)
-
-Source, issues and pull requests: [gemstack-rb/gemstack](https://github.com/gemstack-rb/gemstack)
-(this gem lives in `gems/gemstack-db`).
+GemStack is a modular Ruby API framework for Next.js applications by
+[Adware Technologies](https://www.adwaretech.com) — [gemstack-rb/gemstack](https://github.com/gemstack-rb/gemstack).
 
 ## License
 

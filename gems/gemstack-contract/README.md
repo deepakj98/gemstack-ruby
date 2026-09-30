@@ -1,23 +1,13 @@
 # gemstack-contract
 
-GemStack contract: TypeScript types, API clients and OpenAPI from the backend.
+**Merged into [`gemstack`](https://rubygems.org/gems/gemstack) in GemStack 0.3.0.**
 
-Part of [GemStack](https://github.com/gemstack-rb/gemstack), a modular Ruby API framework for Next.js
-applications by [Adware Technologies](https://www.adwaretech.com). All GemStack gems are developed together in that repository and released with the same
-version.
+This version is a transition shim: it depends on `gemstack` and loads `gemstack/contract`, so Gemfiles that
+still list `gemstack-contract` keep working. To finish upgrading, remove `gem "gemstack-contract"` from your Gemfile
+(it's loaded by `require "gemstack"`).
 
-## Installation
-
-Installed with the `gemstack` gem; you rarely need to add it yourself.
-
-## Documentation
-
-- [Guide](https://github.com/gemstack-rb/gemstack/blob/main/docs/typescript.md)
-- [All guides](https://github.com/gemstack-rb/gemstack/tree/main/docs) ·
-  [Architecture](https://github.com/gemstack-rb/gemstack/blob/main/ARCHITECTURE.md)
-
-Source, issues and pull requests: [gemstack-rb/gemstack](https://github.com/gemstack-rb/gemstack)
-(this gem lives in `gems/gemstack-contract`).
+GemStack is a modular Ruby API framework for Next.js applications by
+[Adware Technologies](https://www.adwaretech.com) — [gemstack-rb/gemstack](https://github.com/gemstack-rb/gemstack).
 
 ## License
 

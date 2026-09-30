@@ -1,12 +1,17 @@
 # frozen_string_literal: true
 
-# All GemStack gems share one version; change it with `rake version:set[x.y.z]`.
-version = "0.2.5"
+# Transition shims are released once, at 0.3.0, and depend on any later
+# gemstack, so apps that still list them can keep upgrading.
+version = "0.3.0"
 
+# gemstack-db was merged into the gemstack gem in 0.3.0. This is a transition shim
+# so existing Gemfiles keep working; it depends on gemstack and loads gemstack/db.
 Gem::Specification.new do |spec|
   spec.name = "gemstack-db"
   spec.version = version
-  spec.summary = "GemStack database: Sequel models and migrations for SQLite, PostgreSQL and MySQL"
+  spec.summary = "Merged into the gemstack gem — remove gemstack-db from your Gemfile"
+  spec.description = "Since GemStack 0.3.0, gemstack-db is part of the gemstack gem. This version only depends on " \
+                     "gemstack and loads gemstack/db, so Gemfiles that still list it keep working."
   spec.authors = ["Adware Technologies", "Shoaib Malik"]
   spec.email = ["gemstack26@gmail.com"]
   spec.license = "MIT"
@@ -15,13 +20,13 @@ Gem::Specification.new do |spec|
   spec.files = Dir["README.md", "LICENSE.txt", "CHANGELOG.md", "lib/**/*.rb"]
   spec.require_paths = ["lib"]
   spec.metadata["rubygems_mfa_required"] = "true"
-  spec.metadata["source_code_uri"] = "https://github.com/gemstack-rb/gemstack/tree/main/gems/gemstack-db"
-  spec.metadata["changelog_uri"] = "https://github.com/gemstack-rb/gemstack/blob/main/gems/gemstack-db/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/gemstack-rb/gemstack"
+  spec.metadata["changelog_uri"] = "https://github.com/gemstack-rb/gemstack/blob/main/CHANGELOG.md"
   spec.metadata["bug_tracker_uri"] = "https://github.com/gemstack-rb/gemstack/issues"
   spec.metadata["documentation_uri"] = "https://github.com/gemstack-rb/gemstack/tree/main/docs"
+  spec.post_install_message = "gemstack-db is now part of the gemstack gem. Remove `gem \"gemstack-db\"` from " \
+                              "your Gemfile and make sure `config/app.rb` has `require \"gemstack/db\"` (apps " \
+                              "created with 0.3.0 do)."
 
-  spec.add_dependency "gemstack-core", version
-  spec.add_dependency "gemstack-schema", version
-  spec.add_dependency "sequel", "~> 5.80"
-  # The driver is the app's choice (like Rails): gem "pg", "mysql2", "trilogy" or "sqlite3".
+  spec.add_dependency "gemstack", ">= #{version}", "< 1.0"
 end
