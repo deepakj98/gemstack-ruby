@@ -2,7 +2,7 @@
 
 All GemStack gems are released together with one version.
 
-## Unreleased
+## 0.3.2
 
 - `gemstack` shows the real error when one of its dependencies can't be loaded, instead of saying the
   gemstack gem is missing.
