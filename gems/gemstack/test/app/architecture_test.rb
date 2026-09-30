@@ -10,8 +10,8 @@ require "rbconfig"
 class ArchitectureTest < Minitest::Test
   GEMS_DIR = File.expand_path("../../..", __dir__)
   GEMS = %w[gemstack-cli gemstack gemstack-auth gemstack-realtime].freeze
-  SHIMS = %w[gemstack-core gemstack-cache gemstack-schema gemstack-http gemstack-db gemstack-jobs gemstack-mail
-             gemstack-storage gemstack-contract gemstack-dev].freeze
+  # The 0.3.0 transition shims are built by script/shims (no directories).
+  load File.expand_path("../../../../script/shims", __dir__) unless defined?(GemStackShims)
 
   # A module may only require modules before it in this list ("app" is the
   # umbrella: GemStack::Application, reloading, test helpers).
@@ -90,15 +90,18 @@ class ArchitectureTest < Minitest::Test
   end
 
   def test_publishable_metadata
-    (GEMS + SHIMS).each do |name|
-      s = spec(name)
-
+    specs = GEMS.map { |name| [name, spec(name)] } +
+            GemStackShims::NAMES.map { |mod| [GemStackShims.gem_name(mod), GemStackShims.spec(mod)] }
+    specs.each do |name, s|
       assert_equal ["Adware Technologies", "Shoaib Malik"], s.authors
       assert_equal "MIT", s.license
       assert_equal "true", s.metadata["rubygems_mfa_required"]
       %w[source_code_uri changelog_uri bug_tracker_uri documentation_uri].each do |key|
         assert s.metadata[key]&.start_with?("https://github.com/gemstack-rb/gemstack"), "#{name}: #{key}"
       end
+      %w[README.md LICENSE.txt CHANGELOG.md].each { |file| assert_includes s.files, file, "#{name} ships #{file}" }
+    end
+    GEMS.each do |name|
       %w[README.md LICENSE.txt CHANGELOG.md].each do |file|
         assert File.file?(File.join(GEMS_DIR, name, file)), "#{name} is missing #{file}"
       end
@@ -119,17 +122,28 @@ class ArchitectureTest < Minitest::Test
   end
 
   def test_shims_depend_on_any_later_gemstack_and_load_their_module
-    SHIMS.each do |name|
-      s = spec(name)
+    assert_equal %w[core cache schema http db jobs mail storage contract dev], GemStackShims::NAMES
+    GemStackShims::NAMES.each do |mod|
+      name = GemStackShims.gem_name(mod)
+      s = GemStackShims.spec(mod)
 
       assert_equal "0.3.0", s.version.to_s, "#{name}: shims are released once"
       assert_equal [["gemstack", ["< 1.0", ">= 0.3.0"]]],
                    s.runtime_dependencies.map { |d| [d.name, d.requirement.as_list.sort] }, name
-      loader = File.read(File.join(GEMS_DIR, name, "lib", "#{name}.rb"))
+      assert_includes GemStackShims.files(mod).fetch("lib/#{name}.rb"), %(require "gemstack/#{mod}")
+      assert File.file?(File.join(GEMS_DIR, "gemstack/lib/gemstack/#{mod}.rb")), "#{name} loads a module that exists"
+      refute File.exist?(File.join(GEMS_DIR, name)), "no source directory for #{name}"
+    end
+  end
 
-      assert_includes loader, %(require "gemstack/#{name.delete_prefix("gemstack-")}")
-      assert File.file?(File.join(GEMS_DIR, "gemstack/lib/gemstack/#{name.delete_prefix("gemstack-")}.rb")),
-             "#{name} loads a module that exists"
+  def test_shims_build
+    Dir.mktmpdir do |dir|
+      files = GemStackShims.build(dir)
+
+      assert_equal 10, files.size
+      package = Gem::Package.new(File.join(dir, "gemstack-db-0.3.0.gem"))
+
+      assert_equal %w[CHANGELOG.md LICENSE.txt README.md lib/gemstack-db.rb], package.contents.sort
     end
   end
 

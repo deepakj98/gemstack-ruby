@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Prints the gems to release, in order, as "name version": gemstack,
-# gemstack-auth, gemstack-realtime, then the transition shims (fixed at 0.3.0).
+# Prints the gems to release, in order, as "name version": gemstack-cli,
+# gemstack, gemstack-auth, gemstack-realtime, then the 0.3.0 transition shims
+# (built by script/shims; skipped by releases once they are published).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ruby -e '
-  src = File.read("Rakefile")
-  names = %w[GEMS SHIMS].flat_map { |list| src[/^#{list} = %w\[(.*?)\]/m, 1].split }
+  names = File.read("Rakefile")[/^GEMS = %w\[(.*?)\]/m, 1].split
   names.each { |name| puts "#{name} #{Gem::Specification.load("gems/#{name}/#{name}.gemspec").version}" }
 '
+script/shims list

@@ -5,10 +5,10 @@ require "rake/testtask"
 # The published gems, in dependency order: gemstack-cli (only the executable)
 # first, then gemstack (the framework), then the two optional modules.
 GEMS = %w[gemstack-cli gemstack gemstack-auth gemstack-realtime].freeze
-# The names merged into gemstack in 0.3.0: released once as transition shims
-# (each depends on gemstack >= 0.3.0 and loads its module), never again.
-SHIMS = %w[gemstack-core gemstack-cache gemstack-schema gemstack-http gemstack-db gemstack-jobs gemstack-mail
-           gemstack-storage gemstack-contract gemstack-dev].freeze
+# The names merged into gemstack in 0.3.0 are released once as transition
+# shims, built by script/shims (there is no source directory for them).
+load File.expand_path("script/shims", __dir__) unless defined?(GemStackShims)
+SHIMS = GemStackShims::NAMES.map { |mod| GemStackShims.gem_name(mod) }.freeze
 LIBS = (GEMS - ["gemstack-cli"]).map { |gem| "gems/#{gem}/lib" }.freeze
 
 # One test task per module (rake test:http, test:db, …) and per extra gem.
@@ -28,18 +28,23 @@ end
 desc "Run every test suite"
 task test: SUITES.map { |name, _| "test:#{name}" }
 
-def gem_version(name) = Gem::Specification.load(File.expand_path("gems/#{name}/#{name}.gemspec", __dir__)).version.to_s
+def gem_version(name)
+  return GemStackShims::VERSION if SHIMS.include?(name)
+
+  Gem::Specification.load(File.expand_path("gems/#{name}/#{name}.gemspec", __dir__)).version.to_s
+end
 
 namespace :gems do
   require_relative "gems/gemstack/lib/gemstack/version"
 
-  desc "Build every gem (and the shims) into pkg/"
+  desc "Build every gem (and the 0.3.0 shims) into pkg/"
   task :build do
     mkdir_p "pkg"
-    (GEMS + SHIMS).each do |name|
+    GEMS.each do |name|
       file = "#{name}-#{gem_version(name)}.gem"
       Dir.chdir("gems/#{name}") { sh "gem build #{name}.gemspec --output ../../pkg/#{file}" }
     end
+    GemStackShims.build(File.expand_path("pkg", __dir__))
   end
 
   desc "Build and install the gems for the current Ruby (like `gem install gemstack`)"

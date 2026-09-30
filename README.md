@@ -147,7 +147,6 @@ gems/
   gemstack-cli/      the `gemstack` executable
   gemstack-auth/     authentication and policies (argon2)
   gemstack-realtime/ Server-Sent Events (nio4r)
-  gemstack-core/ …   transition shims for the gems merged into gemstack in 0.3.0
 docs/                guides
 benchmarks/          performance measurements
 examples/shop/       an example application
