@@ -155,10 +155,15 @@ ARCHITECTURE.md      how GemStack is put together · CHANGELOG.md releases
 
 ## Developing GemStack
 
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, where tests go and how
+pull requests are checked. Report vulnerabilities privately: [SECURITY.md](SECURITY.md).
+
 ```bash
 bundle install
 bundle exec rake          # all tests + RuboCop
 bundle exec rake test:http             # one module (test:db, test:cli, test:auth, …)
+bundle exec rake test:changed          # the modules your branch changes
+bundle exec rake "test:new[http,rate_limiting]"   # start a test file in a module
 GEMSTACK_TEST_DATABASE_URL=postgres://user:pass@localhost/gemstack_test bundle exec rake test:db
 bundle exec rake test:databases        # db, jobs and auth on SQLite (+ PostgreSQL/MySQL when configured)
 script/ruby-matrix                     # the suite on Ruby 3.3, 3.4 and 4.0 (Docker)

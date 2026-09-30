@@ -27,6 +27,50 @@ end
 desc "Run every test suite"
 task test: SUITES.map { |name, _| "test:#{name}" }
 
+load File.expand_path("script/changes", __dir__) unless defined?(GemStackChanges)
+
+desc "Run the test suites of the modules this branch changes (script/changes)"
+task "test:changed" do
+  suites = GemStackChanges.suites(GemStackChanges.changed_files)
+  suites = SUITES.map(&:first) if suites == :all
+  puts suites.empty? ? "No module changes — nothing to run." : "Running: #{suites.join(", ")}"
+  suites.each { |name| Rake::Task["test:#{name}"].invoke }
+end
+
+# Setup that a new test in each suite usually needs (see each test_helper.rb).
+TEST_TEMPLATES = {
+  "http" => { includes: %w[Rack::Test::Methods HTTPTestHelpers] },
+  "db" => { includes: %w[DBTest] },
+  "auth" => { superclass: "AuthTestCase" }
+}.freeze
+
+desc 'Start a test file in a module: rake "test:new[http,rate_limiting]"'
+task "test:new", [:suite, :name] do |_, args|
+  dir = SUITES.to_h[args[:suite].to_s]
+  name = args[:name].to_s
+  abort "usage: rake \"test:new[suite,name]\" — suites: #{SUITES.map(&:first).join(", ")}" unless dir
+  abort "the name is snake_case, like rate_limiting" unless name.match?(/\A[a-z][a-z0-9_]*\z/)
+
+  file = "#{dir}#{name.delete_suffix("_test")}_test.rb"
+  abort "#{file} already exists" if File.exist?(file)
+
+  template = TEST_TEMPLATES.fetch(args[:suite], {})
+  klass = "#{name.delete_suffix("_test").split("_").map(&:capitalize).join}Test"
+  includes = template.fetch(:includes, []).map { |mod| "  include #{mod}\n" }.join
+  File.write(file, <<~RUBY)
+    # frozen_string_literal: true
+
+    require "test_helper"
+
+    class #{klass} < #{template.fetch(:superclass, "Minitest::Test")}
+    #{includes}#{"\n" unless includes.empty?}  def test_describe_what_it_does
+        flunk "write the test: arrange, act, assert (see CONTRIBUTING.md → Tests)"
+      end
+    end
+  RUBY
+  puts "Created #{file}\nRun it: bundle exec rake test:#{args[:suite]} TEST=#{file}"
+end
+
 def gem_version(name)
   Gem::Specification.load(File.expand_path("gems/#{name}/#{name}.gemspec", __dir__)).version.to_s
 end
