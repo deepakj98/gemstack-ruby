@@ -6,7 +6,7 @@ module GemStack
       # `gemstack doctor` for apps generated before 0.3.0, when every module
       # was its own gem: says exactly what to change to finish upgrading.
       module UpgradeCheck
-        # Gems merged into gemstack in 0.3.0; their names still install (as shims).
+        # Gems merged into gemstack in 0.3.0; their last release (0.3.0) only loads gemstack.
         RETIRED_GEMS = %w[core cache schema http db jobs mail storage contract dev].freeze
         LOADED_BY_REQUIRE = %w[db jobs mail storage].freeze
 

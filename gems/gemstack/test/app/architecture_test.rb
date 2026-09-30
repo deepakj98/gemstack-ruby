@@ -10,8 +10,6 @@ require "rbconfig"
 class ArchitectureTest < Minitest::Test
   GEMS_DIR = File.expand_path("../../..", __dir__)
   GEMS = %w[gemstack-cli gemstack gemstack-auth gemstack-realtime].freeze
-  # The 0.3.0 transition shims are built by script/shims (no directories).
-  load File.expand_path("../../../../script/shims", __dir__) unless defined?(GemStackShims)
 
   # A module may only require modules before it in this list ("app" is the
   # umbrella: GemStack::Application, reloading, test helpers).
@@ -90,9 +88,7 @@ class ArchitectureTest < Minitest::Test
   end
 
   def test_publishable_metadata
-    specs = GEMS.map { |name| [name, spec(name)] } +
-            GemStackShims::NAMES.map { |mod| [GemStackShims.gem_name(mod), GemStackShims.spec(mod)] }
-    specs.each do |name, s|
+    GEMS.map { |name| [name, spec(name)] }.each do |name, s|
       assert_equal ["Adware Technologies", "Shoaib Malik"], s.authors
       assert_equal "MIT", s.license
       assert_equal "true", s.metadata["rubygems_mfa_required"]
@@ -121,30 +117,14 @@ class ArchitectureTest < Minitest::Test
     end
   end
 
-  def test_shims_depend_on_any_later_gemstack_and_load_their_module
-    assert_equal %w[core cache schema http db jobs mail storage contract dev], GemStackShims::NAMES
-    GemStackShims::NAMES.each do |mod|
-      name = GemStackShims.gem_name(mod)
-      s = GemStackShims.spec(mod)
+  # The names merged into gemstack in 0.3.0 had their last release then; only
+  # these four gems are built and released.
+  def test_only_the_four_gems_are_released
+    assert_equal GEMS.sort, Dir["#{GEMS_DIR}/*/*.gemspec"].map { |file| File.basename(file, ".gemspec") }.sort
+    out, status = Open3.capture2e(File.expand_path("../../../../script/gems", __dir__))
 
-      assert_equal "0.3.0", s.version.to_s, "#{name}: shims are released once"
-      assert_equal [["gemstack", ["< 1.0", ">= 0.3.0"]]],
-                   s.runtime_dependencies.map { |d| [d.name, d.requirement.as_list.sort] }, name
-      assert_includes GemStackShims.files(mod).fetch("lib/#{name}.rb"), %(require "gemstack/#{mod}")
-      assert File.file?(File.join(GEMS_DIR, "gemstack/lib/gemstack/#{mod}.rb")), "#{name} loads a module that exists"
-      refute File.exist?(File.join(GEMS_DIR, name)), "no source directory for #{name}"
-    end
-  end
-
-  def test_shims_build
-    Dir.mktmpdir do |dir|
-      files = GemStackShims.build(dir)
-
-      assert_equal 10, files.size
-      package = Gem::Package.new(File.join(dir, "gemstack-db-0.3.0.gem"))
-
-      assert_equal %w[CHANGELOG.md LICENSE.txt README.md lib/gemstack-db.rb], package.contents.sort
-    end
+    assert_predicate status, :success?, out
+    assert_equal GEMS.map { |name| "#{name} #{GemStack::VERSION}" }, out.lines(chomp: true)
   end
 
   # gemstack-cli owns the executable (it did before 0.3.0, and RubyGems won't

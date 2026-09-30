@@ -5,10 +5,9 @@ require "rake/testtask"
 # The published gems, in dependency order: gemstack-cli (only the executable)
 # first, then gemstack (the framework), then the two optional modules.
 GEMS = %w[gemstack-cli gemstack gemstack-auth gemstack-realtime].freeze
-# The names merged into gemstack in 0.3.0 are released once as transition
-# shims, built by script/shims (there is no source directory for them).
-load File.expand_path("script/shims", __dir__) unless defined?(GemStackShims)
-SHIMS = GemStackShims::NAMES.map { |mod| GemStackShims.gem_name(mod) }.freeze
+# The gem names merged into gemstack in 0.3.0. Their last release (0.3.0) is a
+# placeholder that loads gemstack; they are never built or released again.
+OLD_GEMS = %w[core cache schema http db jobs mail storage contract dev].map { |mod| "gemstack-#{mod}" }.freeze
 LIBS = (GEMS - ["gemstack-cli"]).map { |gem| "gems/#{gem}/lib" }.freeze
 
 # One test task per module (rake test:http, test:db, …) and per extra gem.
@@ -29,22 +28,19 @@ desc "Run every test suite"
 task test: SUITES.map { |name, _| "test:#{name}" }
 
 def gem_version(name)
-  return GemStackShims::VERSION if SHIMS.include?(name)
-
   Gem::Specification.load(File.expand_path("gems/#{name}/#{name}.gemspec", __dir__)).version.to_s
 end
 
 namespace :gems do
   require_relative "gems/gemstack/lib/gemstack/version"
 
-  desc "Build every gem (and the 0.3.0 shims) into pkg/"
+  desc "Build every gem into pkg/"
   task :build do
     mkdir_p "pkg"
     GEMS.each do |name|
       file = "#{name}-#{gem_version(name)}.gem"
       Dir.chdir("gems/#{name}") { sh "gem build #{name}.gemspec --output ../../pkg/#{file}" }
     end
-    GemStackShims.build(File.expand_path("pkg", __dir__))
   end
 
   desc "Build and install the gems for the current Ruby (like `gem install gemstack`)"
@@ -61,7 +57,9 @@ namespace :gems do
 
   desc "Uninstall every GemStack gem from the current Ruby"
   task :uninstall do
-    (SHIMS + GEMS.reverse).each { |name| sh "gem uninstall #{name} --all --executables --ignore-dependencies --force" }
+    (OLD_GEMS + GEMS.reverse).each do |name|
+      sh "gem uninstall #{name} --all --executables --ignore-dependencies --force"
+    end
   end
 
   desc "Build the gems, install them into a throwaway GEM_HOME, then run `gemstack new` from them"
@@ -69,7 +67,7 @@ namespace :gems do
     require "tmpdir"
     Dir.mktmpdir("gemstack-gems") do |home|
       env = { "GEM_HOME" => home, "GEM_PATH" => home, "BUNDLE_GEMFILE" => nil, "RUBYOPT" => nil }
-      files = (GEMS + SHIMS).map { |name| "pkg/#{name}-#{gem_version(name)}.gem" }
+      files = GEMS.map { |name| "pkg/#{name}-#{gem_version(name)}.gem" }
       Bundler.with_unbundled_env do
         sh env, "gem", "install", "--no-document", "--quiet", *files
         sh env, File.join(home, "bin", "gemstack"), "version"

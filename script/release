@@ -38,8 +38,7 @@ echo "== build and check"
 bundle exec rake gems:check
 
 echo "== push to rubygems.org (you'll be asked for your MFA code)"
-# gemstack first, then gemstack-auth and gemstack-realtime, then the 0.3.0 shims
-# (already published after the first 0.3 release, so skipped from then on).
+# gemstack-cli, gemstack, then gemstack-auth and gemstack-realtime.
 script/gems | while read -r gem version; do
   if curl -fsS -o /dev/null "https://rubygems.org/api/v2/rubygems/$gem/versions/$version.json" 2>/dev/null; then
     echo "   $gem $version is already published — skipped"
