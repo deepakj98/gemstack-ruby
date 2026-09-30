@@ -24,5 +24,6 @@ IO.popen([File.expand_path("gems", __dir__)], &:readlines).each do |line|
   found = published?(gem, version)
   next if missing_only && found
 
-  puts missing_only ? "#{gem} #{version}" : "#{gem} #{version} #{found ? "published" : "missing"}"
+  state = found ? "published" : "missing"
+  puts missing_only ? "#{gem} #{version}" : "#{gem} #{version} #{state}"
 end
