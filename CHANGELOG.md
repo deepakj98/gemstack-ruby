@@ -4,6 +4,11 @@ All GemStack gems are released together with one version.
 
 ## Unreleased
 - Add `reload!` to the console to reload application code without restarting the console.
+
+- Add the `gsk` executable alias, including app-local binstubs and matching help output.
+
+## 0.3.2
+
 - `gemstack` shows the real error when one of its dependencies can't be loaded, instead of saying the
   gemstack gem is missing.
 

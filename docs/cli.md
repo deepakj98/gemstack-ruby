@@ -1,8 +1,9 @@
 # Command reference
 
 Every command runs inside an application folder (the one with `config/app.rb`),
-except `gemstack new`. `gemstack help COMMAND` shows all options. `g` is short
-for `generate`.
+except `gemstack new`. `gsk` is a shorter executable alias for `gemstack`; all
+commands work with either name. `gemstack help COMMAND` shows all options. `g`
+is short for `generate`.
 
 ## Create and run
 
@@ -14,13 +15,13 @@ gemstack new shop --skip-database         # no database (no models)
 gemstack new shop --skip-install          # write files only (no bundle/npm install)
 gemstack new shop --skip-git
 
-gemstack dev              # Next.js + Ruby API + jobs worker behind one port → http://localhost:3000
-PORT=3001 gemstack dev    # another port
-gemstack server           # only the Ruby API (Puma); alias: s
-gemstack console          # IRB with the app loaded (-e production for another environment); alias: c
-gemstack routes           # list API routes (-g TEXT to filter)
-gemstack test             # run the Ruby tests (or: gemstack test test/models/product_test.rb); alias: t
-gemstack doctor           # check the setup and say how to fix problems (--production before deploying)
+gemstack dev               # Next.js + Ruby API + jobs worker behind one port → http://localhost:3000
+PORT=3001 gemstack dev     # another port
+gemstack server            # only the Ruby API (Puma); alias: s
+gemstack console           # IRB with the app loaded (-e production for another environment); alias: c
+gemstack routes            # list API routes (-g TEXT to filter)
+gemstack test              # run the Ruby tests (or: gemstack test test/models/product_test.rb); alias: t
+gemstack doctor            # check the setup and say how to fix problems (--production before deploying)
 gemstack version
 ```
 
@@ -163,14 +164,14 @@ The generated types and clients update themselves while `gemstack dev` runs
 ## Database
 
 ```bash
-gemstack db:create        # create the database (SQLite: the file) — gemstack new already does this
-gemstack db:migrate       # apply pending migrations (--target VERSION to go up or down to one)
-gemstack db:rollback      # undo the last migration (--steps 2 for more)
-gemstack db:status        # which migrations have run
-gemstack db:seed          # load db/seeds.rb
-gemstack db:setup         # create + migrate + seed
-gemstack db:reset         # drop + setup (development and test only)
-gemstack db:drop          # refused in production unless GEMSTACK_ALLOW_DB_DROP=1
+gemstack db:create         # create the database (SQLite: the file) — gemstack new already does this
+gemstack db:migrate        # apply pending migrations (--target VERSION to go up or down to one)
+gemstack db:rollback       # undo the last migration (--steps 2 for more)
+gemstack db:status         # which migrations have run
+gemstack db:seed           # load db/seeds.rb
+gemstack db:setup          # create + migrate + seed
+gemstack db:reset          # drop + setup (development and test only)
+gemstack db:drop           # refused in production unless GEMSTACK_ALLOW_DB_DROP=1
 ```
 
 Add `-e test` (or `GEMSTACK_ENV=test`) to run one against the test database.
@@ -179,19 +180,19 @@ Connections: [databases](database.md).
 ## Optional modules
 
 ```bash
-gemstack add auth         # sign up / log in, password reset, email verification, API tokens, policies
-gemstack add storage      # file uploads to disk or S3
-gemstack add realtime     # GemStack.broadcast → browsers (Server-Sent Events)
+gemstack add auth          # sign up / log in, password reset, email verification, API tokens, policies
+gemstack add storage       # file uploads to disk or S3
+gemstack add realtime      # GemStack.broadcast → browsers (Server-Sent Events)
 ```
 
 ## Background jobs and the contract
 
 ```bash
-gemstack jobs             # run a worker (gemstack dev runs one for you)
-gemstack jobs:status      # ready / scheduled / running / failed per queue
-gemstack jobs:failed      # recent failures with their errors
-gemstack jobs:retry [IDS] # put failed jobs back on the queue
+gemstack jobs              # run a worker (gemstack dev runs one for you)
+gemstack jobs:status       # ready / scheduled / running / failed per queue
+gemstack jobs:failed       # recent failures with their errors
+gemstack jobs:retry [IDS]  # put failed jobs back on the queue
 gemstack jobs:discard [IDS]
-gemstack contract         # regenerate TypeScript types, API clients and openapi.json for every route
+gemstack contract          # regenerate TypeScript types, API clients and openapi.json for every route
                           # (custom controllers too: docs/typescript.md#documenting-custom-endpoints)
 ```

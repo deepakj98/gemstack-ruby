@@ -39,8 +39,9 @@ bundle exec rake gems:check
 
 echo "== push to rubygems.org (you'll be asked for your MFA code)"
 # gemstack-cli, gemstack, then gemstack-auth and gemstack-realtime.
-script/gems | while read -r gem version; do
-  if curl -fsS -o /dev/null "https://rubygems.org/api/v2/rubygems/$gem/versions/$version.json" 2>/dev/null; then
+# (Normally the release workflow publishes: see .github/workflows/release.yml.)
+script/published | while read -r gem version state; do
+  if [ "$state" = "published" ]; then
     echo "   $gem $version is already published — skipped"
     continue
   fi

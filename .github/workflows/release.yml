@@ -1,8 +1,15 @@
-# Publishes a release when a version tag is pushed:
+# Publishes a release when a new version reaches main:
 #
-#   bundle exec rake version:set[0.3.1]   # + a "## 0.3.1" section in CHANGELOG.md
-#   git commit -am "Release 0.3.1" && git push
-#   git tag v0.3.1 && git push origin v0.3.1
+#   bundle exec rake version:set[0.3.2]   # + rename "## Unreleased" to "## 0.3.2" in CHANGELOG.md
+#   bundle install
+#   git commit -am "Release 0.3.2" && git push
+#
+# The push changes gems/gemstack/lib/gemstack/version.rb, which starts this
+# workflow. It checks the version, the changelog and the tree, runs the tests,
+# pushes the gems that aren't on rubygems.org yet, then creates the v0.3.2 tag
+# and the GitHub release. Pushing a v* tag by hand (or "Run workflow" in the
+# Actions tab) does the same; every step skips what already exists, so a run
+# can be repeated safely.
 #
 # Gems are pushed with rubygems.org trusted publishing (no API key or MFA code
 # is stored anywhere). Each gem must have gemstack-rb/gemstack, this workflow
@@ -13,11 +20,19 @@ name: Release
 
 on:
   push:
+    branches: [main]
+    paths: ["gems/gemstack/lib/gemstack/version.rb"]
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
-  contents: write   # the GitHub release
+  contents: write   # the tag and the GitHub release
   id-token: write   # trusted publishing to rubygems.org
+
+# One release at a time; a second run waits instead of racing the first.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -25,6 +40,8 @@ jobs:
     environment: release
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # existing tags
       - name: Database client libraries (pg, mysql2)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libpq-dev default-libmysqlclient-dev
       - uses: ruby/setup-ruby@v1
@@ -32,32 +49,50 @@ jobs:
           ruby-version: "4.0"
           bundler-cache: true
 
-      - name: The tag matches the version and the changelog
+      - name: The version to release
+        id: version
         run: |
           version=$(ruby -e 'require "./gems/gemstack/lib/gemstack/version"; print GemStack::VERSION')
-          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME but the code is $version"; exit 1; }
-          grep -q "^## $version" CHANGELOG.md || { echo "CHANGELOG.md has no '## $version' section"; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME but the code is $version"; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing GemStack $version"
+
+      - name: Which gems still need publishing
+        id: pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          script/published --missing > pending.txt
+          cat pending.txt
+          echo "any=$([ -s pending.txt ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          released=$(gh release view "${{ steps.version.outputs.tag }}" > /dev/null 2>&1 && echo true || echo false)
+          echo "released=$released" >> "$GITHUB_OUTPUT"
+
+      - name: Already released
+        if: steps.pending.outputs.any == 'false' && steps.pending.outputs.released == 'true'
+        run: echo "GemStack ${{ steps.version.outputs.version }} is already published and released; nothing to do."
+
+      - name: The changelog has this version
+        if: steps.pending.outputs.any == 'true' || steps.pending.outputs.released == 'false'
+        run: |
+          grep -q "^## ${{ steps.version.outputs.version }}$" CHANGELOG.md \
+            || { echo "CHANGELOG.md has no '## ${{ steps.version.outputs.version }}' section"; exit 1; }
 
       - name: Nothing that looks like a secret or data file is tracked
+        if: steps.pending.outputs.any == 'true'
         run: |
           if git ls-files | grep -iE '(^|/)\.env($|\.[^e])|\.pem$|\.key$|(^|/)(secrets?|credentials?)(\.[a-z]+)?$|_secret$|\.sql$|\.csv$|\.log$'; then
             echo "files above may hold secrets or data — remove them before releasing"; exit 1
           fi
 
       - name: Tests (SQLite) and build
+        if: steps.pending.outputs.any == 'true'
         run: |
           bundle exec rake test test:databases
           bundle exec rake gems:check
-
-      - name: Which gems still need publishing
-        id: pending
-        run: |
-          script/gems | while read -r gem version; do
-            curl -fsS -o /dev/null "https://rubygems.org/api/v2/rubygems/$gem/versions/$version.json" 2>/dev/null \
-              || echo "$gem $version"
-          done > pending.txt
-          cat pending.txt
-          echo "any=$([ -s pending.txt ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - uses: rubygems/configure-rubygems-credentials@v1.0.0
         if: steps.pending.outputs.any == 'true'
@@ -67,10 +102,21 @@ jobs:
         run: |
           while read -r gem version; do gem push "pkg/$gem-$version.gem"; done < pending.txt
 
+      - name: Tag
+        if: steps.pending.outputs.released == 'false'
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
+            echo "$tag exists"
+          else
+            git tag "$tag" "$GITHUB_SHA" && git push origin "$tag"
+          fi
+
       - name: GitHub release with the changelog section
+        if: steps.pending.outputs.released == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${{ steps.version.outputs.version }}"
           ruby -e 'v = ARGV[0]; s = File.read("CHANGELOG.md"); puts s[/^## #{Regexp.escape(v)}\n(.*?)(?=^## |\z)/m, 1].to_s.strip' "$version" > notes.md
-          gh release create "$GITHUB_REF_NAME" --title "GemStack $version" --notes-file notes.md
+          gh release create "${{ steps.version.outputs.tag }}" --verify-tag --title "GemStack $version" --notes-file notes.md

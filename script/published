@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Which of this checkout's gem versions (script/gems) are on rubygems.org.
+#
+#   script/published            # "gemstack 0.3.1 published" / "… missing" for each gem
+#   script/published --missing  # only the missing ones, as "name version" (for gem push)
+#
+# Uses the versions list, which is up to date as soon as a push succeeds.
+require "json"
+require "net/http"
+
+def published?(gem, version)
+  response = Net::HTTP.get_response(URI("https://rubygems.org/api/v1/versions/#{gem}.json"))
+  return false if response.is_a?(Net::HTTPNotFound)
+  raise "rubygems.org: #{response.code} for #{gem}" unless response.is_a?(Net::HTTPSuccess)
+
+  JSON.parse(response.body).any? { |v| v["number"] == version }
+end
+
+missing_only = ARGV.include?("--missing")
+IO.popen([File.expand_path("gems", __dir__)], &:readlines).each do |line|
+  gem, version = line.split
+  found = published?(gem, version)
+  next if missing_only && found
+
+  state = found ? "published" : "missing"
+  puts missing_only ? "#{gem} #{version}" : "#{gem} #{version} #{state}"
+end
