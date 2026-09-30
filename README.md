@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo/gemstack-logo-dark.svg">
+    <img src="docs/assets/logo/gemstack-logo.svg" alt="GemStack" width="320">
+  </picture>
+</p>
+
 # GemStack
 
 **A fast, modular Ruby API framework for Next.js applications** — by [Adware Technologies](https://www.adwaretech.com).
@@ -105,7 +112,7 @@ server database ([databases](docs/database.md)).
 
 ```bash
 gem install gemstack
-gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.3.0"
+gemstack new shop                  # Gemfile: gem "gemstack", "~> 0.3.1"
 ```
 
 One gem is the framework: routing, controllers, models, background jobs, mail,

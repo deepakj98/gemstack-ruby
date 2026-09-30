@@ -57,10 +57,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Database client libraries (pg, mysql2)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libpq-dev default-libmysqlclient-dev
+      # Gems are installed system-wide, as on a developer machine: bin/gemstack
+      # runs without Bundler, and the generated app must not see a vendor/bundle
+      # that only this repository's bundle knows about.
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "4.0"
-          bundler-cache: true
+      - name: Install gems
+        run: bundle install --jobs 4
       - uses: actions/setup-node@v4
         with:
           node-version: 22

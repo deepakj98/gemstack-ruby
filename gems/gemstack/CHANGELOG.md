@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+See the [GemStack changelog](https://github.com/gemstack-rb/gemstack/blob/main/CHANGELOG.md).
+
 ## 0.3.0
 
 The framework gem now contains core, cache, schema, http, db, jobs, mail, storage, contract, dev and the CLI code. See the [GemStack changelog](https://github.com/gemstack-rb/gemstack/blob/main/CHANGELOG.md).

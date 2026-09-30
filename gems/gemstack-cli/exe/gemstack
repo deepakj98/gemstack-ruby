@@ -6,7 +6,10 @@
 # without an executable conflict.
 begin
   require "gemstack/cli"
-rescue LoadError
+rescue LoadError => e
+  # Only when gemstack itself is missing; a missing dependency keeps its own error.
+  raise unless e.path == "gemstack/cli"
+
   abort "gemstack: the gemstack gem is missing — install it with: gem install gemstack"
 end
 

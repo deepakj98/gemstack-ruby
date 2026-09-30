@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+See the [GemStack changelog](https://github.com/gemstack-rb/gemstack/blob/main/CHANGELOG.md).
+
 ## 0.3.0
 
 Depends on the gemstack gem only. See the [GemStack changelog](https://github.com/gemstack-rb/gemstack/blob/main/CHANGELOG.md).

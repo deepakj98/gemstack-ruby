@@ -2,6 +2,18 @@
 
 All GemStack gems are released together with one version.
 
+## Unreleased
+
+- `gemstack` shows the real error when one of its dependencies can't be loaded, instead of saying the
+  gemstack gem is missing.
+
+## 0.3.1
+
+- New GemStack logo: a ruby gem on a stack. New apps show it on their welcome page (light and dark
+  mode); the logo files are in `docs/assets/logo/`.
+- Docs: associations and eager loading in [models](docs/models.md): the Sequel equivalents of Rails'
+  `includes`, `eager_load` and `joins`, and how to catch N+1 queries.
+
 ## 0.3.0
 
 **GemStack is now one gem.** The framework — core, cache, schema, http, db, jobs, mail, storage, contract,
