@@ -27,6 +27,8 @@ Install the `gemstack` command:
 gem install gemstack
 ```
 
+GemStack also installs `gsk` as a shorter alias for `gemstack`.
+
 New apps pin the Ruby that created them in `.ruby-version` and `.tool-versions`,
 and Node.js in `.node-version`, `.nvmrc` and `.tool-versions`, so rbenv, rvm,
 chruby, asdf, mise, nvm, fnm and nodenv all pick the right versions inside the
